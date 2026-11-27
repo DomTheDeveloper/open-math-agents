@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           repository: DomTheDeveloper/formal-conjectures
-          ref: 862be918cb814dea3e61ab8b2404887013cbbb90
+          ref: b474cd11c3dc683146e79301199c65618ce98a01
           persist-credentials: false
       - name: Install pinned Lean toolchain
         run: |
@@ -43,22 +43,22 @@ jobs:
             echo "Checking $file"
             /usr/bin/time -f 'elapsed %e seconds, peak %M KiB' lake env lean -j1 --tstack=65536 -o ".lake/build/lib/lean/${file%.lean}.olean" "$file"
           done < <(sed -n '1,2p' A038098/Certificate/modules.txt)
-      - name: Check the first 49 cube endpoint modules
+      - name: Check the first 13 cube endpoints
         run: |
           set -eo pipefail
           mkdir -p .lake/build/lib/lean/A038098/Certificate
           while IFS= read -r file; do
             echo "Checking $file"
             /usr/bin/time -f 'elapsed %e seconds, peak %M KiB' lake env lean -j1 --tstack=65536 -o ".lake/build/lib/lean/${file%.lean}.olean" "$file"
-          done < <(sed -n '3,51p' A038098/Certificate/modules.txt)
-      - name: Check the next 80 cube endpoint modules
+          done < <(sed -n '3,15p' A038098/Certificate/modules.txt)
+      - name: Check the next 116 cube endpoint modules
         run: |
           set -eo pipefail
           mkdir -p .lake/build/lib/lean/A038098/Certificate
           while IFS= read -r file; do
             echo "Checking $file"
             /usr/bin/time -f 'elapsed %e seconds, peak %M KiB' lake env lean -j1 --tstack=65536 -o ".lake/build/lib/lean/${file%.lean}.olean" "$file"
-          done < <(sed -n '52,131p' A038098/Certificate/modules.txt)
+          done < <(sed -n '16,131p' A038098/Certificate/modules.txt)
       - name: Check the remaining cube endpoint modules
         run: |
           set -eo pipefail
