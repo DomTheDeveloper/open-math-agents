@@ -22,3 +22,6 @@ name = "MillsGreedy"
 
 [[lean_lib]]
 name = "FromRH"
+
+[[lean_lib]]
+name = "GDMMills"

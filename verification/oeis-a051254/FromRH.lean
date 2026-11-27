@@ -1,4 +1,4 @@
-import MillsGreedy
+import GDMMills
 import HilliardCubes
 import Cramer.Main6
 import Main
@@ -14,6 +14,13 @@ theorem oeis_A051254 : ∃ A : ℝ, IsLeast candidates A ∧
     Hilliard.fourPrimes_of_bound (Cramer.cmsPrimeInterval_of_RH riemannHypothesis) hn
   exact ⟨p, hp, ha, by omega⟩
 
+/-- Mills.exists_least with its positive-index convention and its abbreviations unfolded. -/
+theorem gdm_exists_least : ∃ A : ℝ,
+    IsLeast {x : ℝ | x > 1 ∧ ∀ n : ℕ+, Prime ⌊x ^ (3 ^ (n : ℕ))⌋₊} A := by
+  obtain ⟨A,h,_⟩ := oeis_A051254
+  exact exists_least_of_floors A h
+
 #print axioms oeis_A051254
+#print axioms gdm_exists_least
 
 end MillsGreedy
