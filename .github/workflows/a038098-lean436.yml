@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           repository: DomTheDeveloper/formal-conjectures
-          ref: ebc7278d54c9332d8099e30fe70b7dc76bb586cb
+          ref: 526523e5bfd690386802dc4baeb7401f5369ccb4
           path: proof
           persist-credentials: false
           sparse-checkout: A038098
