@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           repository: DomTheDeveloper/formal-conjectures
-          ref: 7dcc7a27fa33559df19bc07f8fbf76ea879ca7ef
+          ref: fe7b029b702095906b7b7406d86e0e61134a64e3
           persist-credentials: false
       - name: Install pinned Lean toolchain
         run: |
@@ -26,13 +26,13 @@ jobs:
         env:
           MATHLIB_NO_CACHE_ON_UPDATE: 1
         run: |
-          lake exe cache get Mathlib.NumberTheory.Chebyshev Mathlib.Analysis.Real.Pi.Bounds Mathlib.Analysis.Complex.ExponentialBounds Mathlib.Tactic.Linarith Mathlib.Tactic.Positivity
+          lake exe cache get Mathlib.NumberTheory.Chebyshev Mathlib.Analysis.Real.Pi.Bounds Mathlib.Analysis.Complex.ExponentialBounds Mathlib.Tactic.Linarith Mathlib.Tactic.Positivity Mathlib.Analysis.SpecialFunctions.Pow.Deriv Mathlib.Analysis.Calculus.Deriv.Shift Mathlib.Analysis.Calculus.MeanValue
       - name: Verify the analytic deductions
         run: |
           set -eo pipefail
           mkdir -p .lake/build/lib/lean/A038098
           lake env lean -o .lake/build/lib/lean/A038098/Analytic.olean A038098/Analytic.lean | tee "$RUNNER_TEMP/a038098-analytic.log"
-          for mod in Envelope FiniteEnvelope Middle; do
+          for mod in Envelope FiniteEnvelope Middle Zeros; do
             lake env lean -o ".lake/build/lib/lean/A038098/$mod.olean" "A038098/$mod.lean" | tee -a "$RUNNER_TEMP/a038098-analytic.log"
           done
           if grep -E 'sorryAx|ofReduceBool|native_decide|trustCompiler' "$RUNNER_TEMP/a038098-analytic.log"; then exit 1; fi
