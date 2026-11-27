@@ -213,11 +213,19 @@ def pow2Chunk64Pow (acc n c : Nat) : Nat :=
   let a6 := pow2Win8Pow a5 n (c6 / 256)
   pow2Win8Pow a6 n (c6 % 256)
 
+/-- Force an accumulator to a numeral before continuing the recursive modular computation. -/
+def forceNat (f : Nat → Nat) : Nat → Nat
+  | 0 => f 0
+  | t + 1 => f (t + 1)
+
+@[simp] private theorem forceNat_eq (f : Nat → Nat) (x : Nat) : forceNat f x = f x := by
+  cases x <;> rfl
+
 def pow2ModChunks64Pow (n : Nat) : List Nat → Nat → Nat
   | [], acc => acc
   | c :: cs, acc =>
     let acc' := pow2Chunk64Pow acc n c
-    if acc' == 0 then 0 else pow2ModChunks64Pow n cs acc'
+    if acc' == 0 then 0 else forceNat (pow2ModChunks64Pow n cs) acc'
 
 private def evalChunks (base : Nat) : List Nat → Nat → Nat
   | [], acc => acc
@@ -352,6 +360,7 @@ private lemma pow2ModChunks64Pow_mod (n : Nat) :
         rw [Nat.pow_mod, ← hstep, zero_pow (by omega), Nat.zero_mod]
       rw [pow_add, pow_mul, Nat.mul_mod, h2zero, zero_mul, Nat.zero_mod]
     · rw [if_neg h0]
+      rw [forceNat_eq]
       exact pow2ModChunks64Pow_mod n cs (pow2Chunk64Pow acc n c) (e * 2 ^ 64 + c) hstep
 
 private lemma not_prime_of_fermat2_fail (n : Nat) (hn3 : 3 ≤ n)
