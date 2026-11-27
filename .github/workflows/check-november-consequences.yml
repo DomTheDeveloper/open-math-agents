@@ -1,0 +1,63 @@
+name: Check consequences of the November proofs
+on:
+  push:
+    branches: [research/november-proof-consequences]
+    paths:
+      - 'research/november-2026/*.lean'
+      - '.github/workflows/check-november-consequences.yml'
+permissions:
+  contents: read
+jobs:
+  proofs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: anthropics/formal-math
+          ref: 11b6c7e3c927df2658f513b6b68ea7f8929c62c5
+          path: upstream
+          persist-credentials: false
+      - name: Install the pinned Lean toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          curl --fail --location --silent --show-error --retry 3 https://github.com/leanprover/elan/releases/download/v4.2.3/elan-x86_64-unknown-linux-gnu.tar.gz -o elan.tar.gz
+          mkdir -p november-elan
+          tar -xzf elan.tar.gz -C november-elan
+          ./november-elan/elan-init -y --no-modify-path --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check arithmetic and the matching identity
+        working-directory: upstream/vp-vnp
+        shell: bash
+        run: |
+          set -euo pipefail
+          lake exe cache get
+          cp ../../research/november-2026/{IdonealFactorWindow,RobinTransfer,BipartiteMatching,MatchingLowerBound}.lean .
+          for proof in IdonealFactorWindow RobinTransfer BipartiteMatching; do
+            lake env lean -o "$proof.olean" "$proof.lean"
+          done
+          cat > CheckLocal.lean <<'LEAN'
+          import IdonealFactorWindow
+          import RobinTransfer
+          import BipartiteMatching
+          #print axioms IdonealFactorWindow.searchable_iff
+          #print axioms NovemberRobin.odd_bound
+          #print axioms NovemberMatching.weighted_eq_permanent
+          LEAN
+          LEAN_PATH=".:$(lake env printenv LEAN_PATH)" lean CheckLocal.lean | tee local-audit.txt
+          python ../../research/november-2026/check_axioms.py local-audit.txt 3
+          python ../../research/november-2026/idoneal.py --verify 1000000
+      - name: Rebuild the permanent lower bound and apply it
+        working-directory: upstream/vp-vnp
+        shell: bash
+        run: |
+          set -euo pipefail
+          lake build Solution
+          export LEAN_PATH=".:$(lake env printenv LEAN_PATH)"
+          lean -o MatchingLowerBound.olean MatchingLowerBound.lean
+          printf '%s\n' 'import MatchingLowerBound' '#print axioms NovemberMatching.matching_circuit_lower_bound' > CheckMatching.lean
+          lean CheckMatching.lean | tee matching-audit.txt
+          python ../../research/november-2026/check_axioms.py matching-audit.txt 1
