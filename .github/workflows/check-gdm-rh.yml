@@ -17,10 +17,10 @@ jobs:
           persist-credentials: false
       - name: Load exact review snapshots
         run: |
-          git fetch --no-tags --depth=1 https://github.com/DomTheDeveloper/formal-conjectures.git 3383823034357511e2cdca36d0866df071f03950 4abdba0e1ecbbbbaa79fde017a05cf2c71f25545 66ea7f1b73e985948639c7581f48e8de35c1e7bf
-          git checkout 3383823034357511e2cdca36d0866df071f03950 -- FormalConjectures/Wikipedia/Mills.lean
+          git fetch --no-tags --depth=1 https://github.com/DomTheDeveloper/formal-conjectures.git 430e8d34d983fe84e57838fc963d7e8fe575b60d 4abdba0e1ecbbbbaa79fde017a05cf2c71f25545 a77593c96f3b5510be30b02705c403258b89a54f
+          git checkout 430e8d34d983fe84e57838fc963d7e8fe575b60d -- FormalConjectures/Wikipedia/Mills.lean
           git checkout 4abdba0e1ecbbbbaa79fde017a05cf2c71f25545 -- FormalConjectures/Paper/RiemannHypothesisEquivalents.lean
-          git checkout 66ea7f1b73e985948639c7581f48e8de35c1e7bf -- FormalConjectures/Wikipedia/IdonealCompleteness.lean
+          git checkout a77593c96f3b5510be30b02705c403258b89a54f -- FormalConjectures/Wikipedia/IdonealCompleteness.lean
       - uses: leanprover/lean-action@38fbc41a8c28c4cbaec22d7f7de508ec2e7c0dd9
         with:
           auto-config: false
@@ -34,6 +34,7 @@ jobs:
           import FormalConjectures.Wikipedia.Mills
           import FormalConjectures.Wikipedia.IdonealCompleteness
           #print axioms Mills.lower_bound_of_isMills
+          #print axioms Idoneal.semiprime_idoneals_of_complete
           #print axioms Idoneal.knownIdonealNumbers_are_idoneal
           LEAN
           lake env lean "$RUNNER_TEMP/Audit.lean"
