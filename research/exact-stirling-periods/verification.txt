@@ -1,0 +1,23 @@
+'PeriodCertificates.A354242_dyadic' does not depend on any axioms
+'PeriodCertificates.A354253_dyadic' does not depend on any axioms
+'PeriodCertificates.A354242_mod9' does not depend on any axioms
+'PeriodCertificates.A354253_mod243' does not depend on any axioms
+'PeriodCertificates.A354253_mod729' does not depend on any axioms
+'ExponentialWindows.window_zero' depends on axioms: [propext, Classical.choice, Quot.sound]
+'ExponentialWindows.tail_zero_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
+'ExponentialWindows.period_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
+'OddLift.normalized_lift' depends on axioms: [propext, Quot.sound]
+'OddLift.translated_power' depends on axioms: [propext]
+'DyadicLift.odd_power_remainder' depends on axioms: [propext, Quot.sound]
+888 normalized Fermat-quotient identities checked directly.
+13 finite windows verified (10 dyadic and 3 ternary).
+A354242: all 18 displayed OEIS terms agree.
+b=1: exact recurrence and Stirling transform agree at indices 0..100; 515 least periods checked using two full universal periods.
+A354253: all 17 displayed OEIS terms agree.
+b=2: exact recurrence and Stirling transform agree at indices 0..100; 515 least periods checked using two full universal periods.
+   9:    6    3
+  64:    2    1
+ 243:  162   81
+ 729:  486  486
+1000:  100  100
+1024:   32    8
