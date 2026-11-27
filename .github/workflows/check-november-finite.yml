@@ -4,6 +4,8 @@ on:
     branches: [research/november-proof-consequences]
     paths:
       - 'research/november-2026/SharpIdoneal.lean'
+      - 'research/november-2026/FirstTermOne.lean'
+      - 'research/november-2026/first_term_count.py'
       - 'research/november-2026/PositivePolynomial.lean'
       - '.github/workflows/check-november-finite.yml'
 permissions:
@@ -37,19 +39,22 @@ jobs:
           set -euo pipefail
           lake exe cache get
           mkdir -p "$RUNNER_TEMP/november-checked"
-          for proof in IdonealFactorWindow SharpIdoneal PositivePolynomial; do
+          for proof in IdonealFactorWindow SharpIdoneal PositivePolynomial FirstTermOne; do
             cp "../../research/november-2026/$proof.lean" .
             LEAN_PATH="$RUNNER_TEMP/november-checked:$(lake env printenv LEAN_PATH)" lean -o "$RUNNER_TEMP/november-checked/$proof.olean" "$proof.lean"
           done
           cat > AuditFinite.lean <<'LEAN'
           import SharpIdoneal
           import PositivePolynomial
+          import FirstTermOne
           #print axioms IdonealFactorWindow.least_first_at_136173
           #print axioms PositivePolynomial.eq_of_equal_on_positive_box
+          #print axioms IdonealFirstTerm.no_first_one_iff
           LEAN
           LEAN_PATH="$RUNNER_TEMP/november-checked:$(lake env printenv LEAN_PATH)" lean AuditFinite.lean | tee finite-audit.txt
-          python ../../research/november-2026/check_axioms.py finite-audit.txt 2
+          python ../../research/november-2026/check_axioms.py finite-audit.txt 3
           python ../../research/november-2026/first_term_search.py --limit 100000000
           c++ -O3 -std=c++17 ../../research/november-2026/first_term_bitset.cpp -o "$RUNNER_TEMP/check-idoneal"
           "$RUNNER_TEMP/check-idoneal"
+          python ../../research/november-2026/first_term_count.py --limit 100000000
           python ../../research/november-2026/matching_check.py
