@@ -1,0 +1,19 @@
+name = "NicolasResidual"
+version = "1.0.0"
+defaultTargets = ["FromRH"]
+
+[[require]]
+name = "tree"
+git = "https://github.com/leanprover-community/riemann-hypothesis.git"
+rev = "507a75d91d131d627b380df4e32f6e9fb21dd067"
+
+[[require]]
+name = "Nicolas"
+git = "https://github.com/senamakel/nicolas-rh.git"
+rev = "3d453a6851594ce074e627e25516d346fa066053"
+
+[[lean_lib]]
+name = "NicolasFloor"
+
+[[lean_lib]]
+name = "FromRH"
