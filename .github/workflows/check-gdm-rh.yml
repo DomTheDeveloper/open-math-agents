@@ -1,0 +1,39 @@
+name: Build the three Formal Conjectures patches
+on:
+  push:
+    branches: [ci/gdm-rh-proof-checks]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  catalogue:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          repository: google-deepmind/formal-conjectures
+          ref: ea8e3e198ded6fc73efb7f5653b74b28ac4ae1a8
+          persist-credentials: false
+      - name: Load exact review snapshots
+        run: |
+          git fetch --no-tags --depth=1 https://github.com/DomTheDeveloper/formal-conjectures.git 3383823034357511e2cdca36d0866df071f03950 4abdba0e1ecbbbbaa79fde017a05cf2c71f25545 66ea7f1b73e985948639c7581f48e8de35c1e7bf
+          git checkout 3383823034357511e2cdca36d0866df071f03950 -- FormalConjectures/Wikipedia/Mills.lean
+          git checkout 4abdba0e1ecbbbbaa79fde017a05cf2c71f25545 -- FormalConjectures/Paper/RiemannHypothesisEquivalents.lean
+          git checkout 66ea7f1b73e985948639c7581f48e8de35c1e7bf -- FormalConjectures/Wikipedia/IdonealCompleteness.lean
+      - uses: leanprover/lean-action@38fbc41a8c28c4cbaec22d7f7de508ec2e7c0dd9
+        with:
+          auto-config: false
+          build: false
+          use-mathlib-cache: true
+      - name: Build changed modules with upstream linters
+        run: lake --wfail build FormalConjectures.Wikipedia.Mills FormalConjectures.Paper.RiemannHypothesisEquivalents FormalConjectures.Wikipedia.IdonealCompleteness
+      - name: Inspect both in-tree proofs
+        run: |
+          cat > "$RUNNER_TEMP/Audit.lean" <<'LEAN'
+          import FormalConjectures.Wikipedia.Mills
+          import FormalConjectures.Wikipedia.IdonealCompleteness
+          #print axioms Mills.lower_bound_of_isMills
+          #print axioms Idoneal.knownIdonealNumbers_are_idoneal
+          LEAN
+          lake env lean "$RUNNER_TEMP/Audit.lean"
