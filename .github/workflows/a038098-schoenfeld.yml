@@ -5,18 +5,19 @@ on:
     paths: ['.github/workflows/a038098-schoenfeld.yml']
 permissions:
   contents: read
+  actions: read
 concurrency:
-  group: a038098-schoenfeld
+  group: a038098-full-conjecture
   cancel-in-progress: true
 jobs:
   kernel:
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           repository: DomTheDeveloper/formal-conjectures
-          ref: ebc7278d54c9332d8099e30fe70b7dc76bb586cb
+          ref: 01f4f642210f5ea19d954bb1c74fee20d32d112f
           path: proof
           persist-credentials: false
           sparse-checkout: A038098
@@ -29,6 +30,7 @@ jobs:
           sparse-checkout: |
             conjectures/schoenfeld-rh
             conjectures/erdos-985
+            conjectures/sun-prime-density-rh
       - name: Install Lean
         run: |
           curl -fsSL --retry 3 https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
@@ -95,6 +97,29 @@ jobs:
           lake env lean -o .lake/build/lib/lean/A038098/External/Schoenfeld.olean A038098/External/Schoenfeld.lean | tee "$RUNNER_TEMP/counted.log"
           grep -F 'Sun.CubeBridge.cubes_above_buthe_of_RH_and_Rosser' "$RUNNER_TEMP/counted.log"
           if grep -E 'sorryAx|ofReduceBool|native_decide|trustCompiler' "$RUNNER_TEMP/counted.log"; then exit 1; fi
+      - name: Reuse the independent Rosser build already in progress
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import time
+          import urllib.request
+          url = "https://api.github.com/repos/" + os.environ["GITHUB_REPOSITORY"] + "/actions/runs/46057036363/jobs"
+          req = urllib.request.Request(url, headers={"Authorization": "Bearer " + os.environ["GH_TOKEN"], "Accept": "application/vnd.github+json"})
+          for attempt in range(35):
+              with urllib.request.urlopen(req, timeout=20) as response:
+                  jobs = json.load(response)["jobs"]
+              job = jobs[0]
+              cache = next((s for s in job["steps"] if s["name"] == "Cache Rosser's proof"), {})
+              if cache.get("conclusion") == "success" or job["status"] == "completed":
+                  print("Independent proof cache step:", cache.get("conclusion"), flush=True)
+                  break
+              if attempt % 5 == 0:
+                  print("Independent Rosser proof still compiling.", flush=True)
+              time.sleep(30)
+          PY
       - name: Restore the Rosser zero-count proof
         if: ${{ !cancelled() }}
         id: rosser_cache
@@ -112,7 +137,17 @@ jobs:
         if: ${{ !cancelled() }}
         id: rosser
         working-directory: upstream/conjectures/schoenfeld-rh
-        run: lake build +RSBounds.Rosser1941:olean
+        env:
+          ROSSER_CACHE_HIT: ${{ steps.rosser_cache.outputs.cache-hit }}
+        run: |
+          if [ "$ROSSER_CACHE_HIT" = true ]; then
+            lake env lean --stdin <<'LEAN'
+          import RSBounds.Rosser1941
+          #check TernaryGoldbach.RSBounds.Rosser1941.zero_count_bounds
+          LEAN
+          else
+            lake build +RSBounds.Rosser1941:olean
+          fi
       - name: Cache Rosser's proof
         if: ${{ !cancelled() && steps.rosser.outcome == 'success' && steps.rosser_cache.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@v4
@@ -144,21 +179,60 @@ jobs:
           LEAN
           grep -F 'sun_six_million_of_RH' "$RUNNER_TEMP/upper-rh.log"
           if grep -E 'sorryAx|ofReduceBool|native_decide|trustCompiler' "$RUNNER_TEMP/upper-rh.log"; then exit 1; fi
-      - name: Verify every cube in the extended interval from RH alone
+      - name: Audit the cube interval from ordinary RH
         if: ${{ !cancelled() && steps.rosser.outcome == 'success' && steps.bridge.outcome == 'success' }}
         working-directory: upstream/conjectures/schoenfeld-rh
         run: |
           set -eo pipefail
-          lake env lean --stdin <<'LEAN' | tee "$RUNNER_TEMP/all-rh.log"
-          import A038098.External.Schoenfeld
-          import RSBounds.Rosser1941
-          theorem sun_2154434_to_ten_million_of_RH (h : RiemannHypothesis) (n : ℕ)
-              (lo : 2154434 ≤ n) (hi : n ≤ 10000000) :
-              (((n+1)^3).primeCounting : ℚ) / (((n+1)^3:ℕ):ℚ) <
-                ((n^3).primeCounting : ℚ) / ((n^3:ℕ):ℚ) :=
-            Sun.CubeBridge.cubes_above_buthe_of_RH_and_Rosser h
-              (fun t ht => TernaryGoldbach.RSBounds.Rosser1941.zero_count_bounds t ht) n lo hi
-          #print axioms sun_2154434_to_ten_million_of_RH
-          LEAN
-          grep -F 'sun_2154434_to_ten_million_of_RH' "$RUNNER_TEMP/all-rh.log"
+          lake env lean -o .lake/build/lib/lean/A038098/External/Riemann.olean A038098/External/Riemann.lean | tee "$RUNNER_TEMP/all-rh.log"
+          grep -F 'Sun.CubeBridge.cubes_2154434_to_ten_million_of_RH' "$RUNNER_TEMP/all-rh.log"
+          grep -F 'Sun.CubeBridge.cubes_200_to_ten_million' "$RUNNER_TEMP/all-rh.log"
           if grep -E 'sorryAx|ofReduceBool|native_decide|trustCompiler' "$RUNNER_TEMP/all-rh.log"; then exit 1; fi
+      - name: Restore independently kernel-checked small cubes
+        uses: actions/cache/restore@v4
+        with:
+          path: upstream/conjectures/schoenfeld-rh/.lake/build/lib/lean/A038098
+          key: a038098-small436-0e13442afa3a-v1
+          fail-on-cache-miss: true
+      - name: Restore the earlier finite calculations
+        uses: actions/cache/restore@v4
+        with:
+          path: upstream/conjectures/schoenfeld-rh/.lake/build/lib/lean/Schoenfeld
+          key: a038098-prior-finite-f34a54829210-v1
+          fail-on-cache-miss: true
+      - name: Compile the prior all-exponent reduction
+        working-directory: upstream/conjectures/schoenfeld-rh
+        run: |
+          set -eu
+          lake build +Schoenfeld.WithRosser:olean +Schoenfeld.Check.Pi:olean
+          lake env lean -o .lake/build/lib/lean/Schoenfeld/Rosser.olean Schoenfeld/Rosser.lean
+          cp -R ../sun-prime-density-rh/SunPrimeDensity .
+          mkdir -p .lake/build/lib/lean/SunPrimeDensity
+          for mod in Statement Analytic Tail Tail3 Check Main; do
+            echo "Checking SunPrimeDensity/$mod.lean"
+            lake env lean -o ".lake/build/lib/lean/SunPrimeDensity/$mod.olean" "SunPrimeDensity/$mod.lean"
+          done
+      - name: Audit the exact full conjecture and its earlier native computations
+        working-directory: upstream/conjectures/schoenfeld-rh
+        run: |
+          set -eo pipefail
+          lake env lean -o .lake/build/lib/lean/A038098/External/Small.olean A038098/External/Small.lean
+          lake env lean -o .lake/build/lib/lean/A038098/External/Sun.olean A038098/External/Sun.lean | tee "$RUNNER_TEMP/full.log"
+          grep -F 'Sun.CubeBridge.conjecture1_of_RH_and_buthe' "$RUNNER_TEMP/full.log"
+          grep -F 'Sun.CubeBridge.conjecture1_of_RH_and_upper_finite_bound' "$RUNNER_TEMP/full.log"
+          python3 - "$RUNNER_TEMP/full.log" <<'PY'
+          import pathlib
+          import re
+          import sys
+          report = pathlib.Path(sys.argv[1]).read_text()
+          reports = re.findall(r"depends on axioms:\s*\[([^\]]+)\]", report, re.S)
+          assert len(reports) == 2
+          dependencies = {name.strip() for names in reports for name in names.split(",")}
+          standard = {"propext", "Classical.choice", "Quot.sound"}
+          earlier = {name for name in dependencies if name.startswith(("SunPrimeDensity.Check.", "Schoenfeld.PsiCert.", "Schoenfeld.Check.")) and "._native.native_decide." in name}
+          extra = dependencies - standard - earlier
+          if extra:
+              raise SystemExit(f"Unexpected axioms: {sorted(extra)}")
+          print(f"Earlier reflected native computations: {len(earlier)}")
+          print(f"Standard axioms: {sorted(dependencies & standard)}")
+          PY
