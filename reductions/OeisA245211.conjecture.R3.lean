@@ -5,6 +5,7 @@ Jaroslav Krizek's A245211 fixed-point conjecture. For distinct primes p,q
 and any positive e, the only fixed point of the form p^e*q is 21 and
 there are no fixed points of the form p^e*q^2. On arbitrary two-prime
 support the ratio of the positive exponents lies between 1/3 and 3.
+If the smaller of the two primes is at most 439, 21 is the only fixed point.
 Every fixed point with prime divisor p also satisfies n ≤ p^(τ(n)-1).
 
 The full divisor moment factors on coprime arguments, as in desenyon's
@@ -740,9 +741,145 @@ theorem prime_power_times_prime_square {p q e : ℕ} (hp : p.Prime) (hq : q.Prim
   have hh := Nat.mul_le_mul_right (p^2) hp5
   nlinarith only [hle, hQ, h3, hqp, hh, pow_pos hp.pos 2]
 
+private theorem strict_tail_upper {q : ℕ} (hq : q.Prime) (k : ℕ) :
+    q*a (q^(k+1)) < (k+1)*q^(k+1)+a (q^(k+1)) := by
+  induction k with
+  | zero => simp [a, hq.properDivisors]
+  | succ k ih =>
+    rw [pow_step hq (k+1), pow_succ q (k+1)]
+    nlinarith only [ih, pow_pos hq.pos (k+1)]
+
+private theorem strict_tail_lower {q : ℕ} (hq : q.Prime) (k : ℕ) :
+    (k+2)*q^(k+2) < q*a (q^(k+2)) := by
+  have hA := a_pos (Nat.one_lt_pow (by omega : k+1 ≠ 0) hq.one_lt)
+  rw [show k+2=k+1+1 by rfl, pow_step hq (k+1), pow_succ q (k+1)]
+  nlinarith only [Nat.mul_pos hq.pos hA]
+
+/-- The other prime is determined by the first prime and the two exponents.
+This is the integer form of the interval in umaia1234's two-prime calculation. -/
+theorem candidate_for_second_prime {p q e b : ℕ} (hp : p.Prime) (hq : q.Prime)
+    (hneq : p ≠ q) (he : 0 < e) (hb : 2 ≤ b) (hf : a (p^e*q^b)=p^e*q^b) :
+    let P := p^e
+    let A := a P
+    let T := A+P*(e+1)
+    let g := P-(b+1)*A
+    b*T/g+1=q := by
+  let P := p^e
+  let Q := q^b
+  let A := a P
+  let B := a Q
+  let T := A+P*(e+1)
+  let c := b+1
+  let g := P-c*A
+  have hP : 0<P := pow_pos hp.pos _
+  have hQ : 0<Q := pow_pos hq.pos _
+  have hT : 0<T := by dsimp only [T]; positivity
+  have hbgt : 0 < b := by omega
+  have hbgt' : c*e < p := by
+    obtain ⟨i,hi⟩ := Nat.exists_eq_succ_of_ne_zero he.ne'
+    subst e
+    dsimp only [c]
+    simpa only [Nat.mul_comm (b+1)] using two_budget hp hq hneq i b hbgt hf
+  have hpA : c*A+1 ≤ P := scaled_gap_one hp e c hbgt'
+  have hPe : c*A+g = P := Nat.add_sub_of_le (by omega)
+  have hc := Nat.coprime_pow_primes e b hp hq hneq
+  have hbal := cut_balance hP hQ hc hf
+  rw [moment_eq hP.ne',card_pow hp,card_pow hq] at hbal
+  have heq : T*B+Q*c*A=P*Q := hbal
+  have hQg : Q*g=T*B := by nlinarith only [heq,congrArg (Q*·) hPe]
+  have hex : b = (b-2)+2 := by omega
+  have hlow : b*Q < q*B := by
+    change b*q^b<q*a (q^b)
+    simpa only [← hex] using strict_tail_lower hq (b-2)
+  have hupp : q*B < b*Q+B := by
+    change q*a (q^b)<b*q^b+a (q^b)
+    simpa only [show b-1+1=b by omega] using strict_tail_upper hq (b-1)
+  have h1 : b*T < q*g := by
+    apply (Nat.mul_lt_mul_left hQ).mp
+    calc
+      Q*(b*T) = T*(b*Q) := by ring
+      _ < T*(q*B) := (Nat.mul_lt_mul_left hT).mpr hlow
+      _ = Q*(q*g) := by nlinarith only [congrArg (q*·) hQg]
+  have h2 : q*g < b*T+g := by
+    apply (Nat.mul_lt_mul_left hQ).mp
+    calc
+      Q*(q*g) = T*(q*B) := by rw [← Nat.mul_assoc, Nat.mul_comm Q q, Nat.mul_assoc, hQg]; ring
+      _ < T*(b*Q+B) := (Nat.mul_lt_mul_left hT).mpr hupp
+      _ = Q*(b*T+g) := by rw [Nat.mul_add Q, hQg]; ring
+  have hq1 : q-1+1=q := Nat.sub_add_cancel (by have := hq.pos; omega)
+  have hh := congrArg (·*g) hq1
+  have hleft : (q-1)*g ≤ b*T := by nlinarith only [h2,hh]
+  have hright : b*T<(q-1+1)*g := by rwa [hq1]
+  change b*T/g+1=q
+  rw [Nat.div_eq_of_lt_le hleft hright,hq1]
+
+-- Exact integer rejection after choosing the smaller prime and both exponents.
+set_option maxRecDepth 30000 in
+set_option maxHeartbeats 5000000 in
+private theorem table_439 :
+    (List.range 440).all (fun p =>
+      if p.Prime then (List.range ((p-1)/4+1)).all (fun e =>
+        if 3 ≤ e then
+          let P := p^e
+          let A := ∑ j ∈ range e, p^j*(j+1)
+          let T := A+P*(e+1)
+          (List.range ((p-1)/e)).all (fun b =>
+            if 3 ≤ b ∧ e ≤ 3*b ∧ b ≤ 3*e then
+              let g := P-(b+1)*A
+              let z := b*T/g+1
+              decide (z ≤ p ∨ ¬ z^b ∣ T)
+            else true)
+        else true)
+      else true) = true := by decide +kernel
+
+/-- For any two-prime input with smaller prime at most 439, without a size
+cutoff on the number or either exponent, the only fixed point is 21. -/
+theorem two_prime_through_439 {p q e b : ℕ} (hp : p.Prime) (hq : q.Prime)
+    (hord : p<q) (h439 : p≤439) (he : 0<e) (hb : 0<b)
+    (hf : a (p^e*q^b)=p^e*q^b) : p^e*q^b=21 := by
+  have hr := exponent_ratio hp hq hord.ne he hb hf
+  have hf' : a (q^b*p^e)=q^b*p^e := by simpa only [Nat.mul_comm (q^b)] using hf
+  have hr' := exponent_ratio hq hp hord.ne' hb he hf'
+  by_cases hb1 : b=1
+  · subst b; simp only [pow_one] at hf ⊢
+    exact prime_power_times_prime hp hq hord.ne he hf
+  by_cases he1 : e=1
+  · subst e; simp only [pow_one] at hf' ⊢
+    simpa only [Nat.mul_comm p] using prime_power_times_prime hq hp hord.ne' hb hf'
+  by_cases hb2 : b=2
+  · subst b; exact (prime_power_times_prime_square hp hq hord.ne he hf).elim
+  by_cases he2 : e=2
+  · subst e; exact (prime_power_times_prime_square hq hp hord.ne' hb hf').elim
+  have h3b : 3 ≤ b := by omega
+  have h3e : 3 ≤ e := by omega
+  have hbudget : e*(b+1)<p := by
+    obtain ⟨i,hi⟩ := Nat.exists_eq_succ_of_ne_zero he.ne'
+    subst e; exact two_budget hp hq hord.ne i b hb hf
+  have he4 : e ≤ (p-1)/4 := (Nat.le_div_iff_mul_le (by decide : 0<4)).mpr (by
+    have hh := Nat.mul_le_mul_left e (show 4≤b+1 by omega); omega)
+  have hbb : b+1 ≤ (p-1)/e := (Nat.le_div_iff_mul_le he).mpr (by
+    rw [Nat.mul_comm]; omega)
+  have hA := proper_pow_sum hp e
+  have hcand := candidate_for_second_prime hp hq hord.ne he (by omega : 2≤b) hf
+  dsimp only at hcand
+  rw [hA] at hcand
+  have ht0 := List.all_eq_true.mp table_439 p (List.mem_range.mpr (show p<440 by omega))
+  rw [if_pos hp] at ht0
+  have ht1 := List.all_eq_true.mp ht0 e (List.mem_range.mpr (show e<(p-1)/4+1 by omega))
+  rw [if_pos h3e] at ht1
+  have ht2 := List.all_eq_true.mp ht1 b (List.mem_range.mpr (show b<(p-1)/e by omega))
+  dsimp only at ht2
+  rw [if_pos ⟨h3b,hr,hr'⟩, hcand] at ht2
+  have hd := prime_power_cross_dvd hq hp hord.ne' hb hf'
+  rw [hA] at hd
+  rcases of_decide_eq_true ht2 with h | h
+  · omega
+  · exact (h hd).elim
+
 /-- The published least-prime computations address these finite ranges. -/
 def H1 : Prop := ∀ n : ℕ, 1 < n → n.minFac ≤ 433 →
   n ≤ n.minFac^(2*n.minFac-3) → (n.minFac % 3 = 1 → n.minFac^2 ∣ n) →
+  (¬ ∃ p q e b : ℕ, p.Prime ∧ q.Prime ∧ p<q ∧ p≤439 ∧ 0<e ∧ 0<b ∧ n=p^e*q^b) →
   (¬ ∃ p q e : ℕ, p.Prime ∧ q.Prime ∧ p ≠ q ∧ 0 < e ∧ (n = p^e*q ∨ n = p^e*q^2)) →
   a n = n → n = 21
 
@@ -752,6 +889,7 @@ def H2 : Prop := ∀ n : ℕ, 1 < n → 433 < n.minFac →
   n.divisors.card ≤ 2*(n.minFac-1) → n ≤ n.minFac^(n.divisors.card-1) →
   (∀ x y : ℕ, 1 < x → 1 < y → x.Coprime y → x*y = n →
     x.divisors.card < Nat.gcd y (∑ d ∈ x.divisors, d * d.divisors.card)) →
+  (¬ ∃ p q e b : ℕ, p.Prime ∧ q.Prime ∧ p<q ∧ p≤439 ∧ 0<e ∧ 0<b ∧ n=p^e*q^b) →
   (¬ ∃ p q e : ℕ, p.Prime ∧ q.Prime ∧ p ≠ q ∧ 0 < e ∧ (n = p^e*q ∨ n = p^e*q^2)) →
   a n ≠ n
 
@@ -772,11 +910,14 @@ theorem main : H1 → H2 → type_of% @OeisA245211.conjecture := by
       rcases heq with rfl | rfl
       · exact prime_power_times_prime hp' hq hpq he hf
       · exact (prime_power_times_prime_square hp' hq hpq he hf).elim
+    by_cases hz : ∃ p q e b : ℕ, p.Prime ∧ q.Prime ∧ p<q ∧ p≤439 ∧ 0<e ∧ 0<b ∧ n=p^e*q^b
+    · obtain ⟨p,q,e,b,hp',hq,ho,hp439,he,hb,rfl⟩ := hz
+      exact two_prime_through_439 hp' hq ho hp439 he hb hf
     by_cases hlo : n.minFac ≤ 433
     · exact h1 n hgt hlo (height_of_small_prime hn hp hd le_rfl hf)
-        (least_prime_one_mod_three hgt hf) hs hf
+        (least_prime_one_mod_three hgt hf) hz hs hf
     · exact (h2 n hgt (by omega) (divisor_count_bound hn hp hd hf) (height hn hp hd hf)
-        (fun _ _ hx hy hc he => cut_gcd hx hy hc (by simpa only [he] using hf)) hs hf).elim
+        (fun _ _ hx hy hc he => cut_gcd hx hy hc (by simpa only [he] using hf)) hz hs hf).elim
   · rintro rfl
     decide
 
