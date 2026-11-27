@@ -1,0 +1,20 @@
+Verified November 27, 2026
+Lean 4.36.0 (611c117bfaf7b7ae1cfcf246ce6fba31e8f509e9)
+mathlib fc4f59e577feb1a4956671bc04ac18aaaf8cd842
+HilliardCubes.lean SHA-256 c716af01150bba2372561673603a2a1bbec3006a379ab0b11d1d591e54cb0070
+
+Direct Lean build, exit 0
+'Hilliard.four_le_primeCount_of_bound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Hilliard.minimum_of_bound' depends on axioms: [propext, Classical.choice, Quot.sound]
+
+Lake build of the root package, exit 0
+Existing local checkouts supplied the pinned dependencies.
+warning: manifest out of date: source kind (git/path) of dependency 'mathlib' changed; use `lake update mathlib` to update it
+ℹ [3984/3986] Built HilliardCubes (15s)
+info: HilliardCubes.lean:536:0: 'Hilliard.four_le_primeCount_of_bound' depends on axioms: [propext, Classical.choice, Quot.sound]
+info: HilliardCubes.lean:537:0: 'Hilliard.minimum_of_bound' depends on axioms: [propext, Classical.choice, Quot.sound]
+Build completed successfully (3986 jobs).
+
+The separate interface test checked definitional equality against the upstream
+interval definitions and both theorem applications with the upstream proofs as
+parameters. It exited successfully. The full RH import was checked upstream.
