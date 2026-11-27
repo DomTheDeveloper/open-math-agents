@@ -1,4 +1,4 @@
-name: Prepare independent inputs for the full conditional Sun theorem
+name: Check Sun cubes through 2153 with the finite psi certificate
 on:
   push:
     branches: [audit/sun-a038098-cubes]
@@ -6,21 +6,17 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: a038098-full-inputs
+  group: a038098-finite-link
   cancel-in-progress: true
 jobs:
   kernel:
     runs-on: ubuntu-latest
     timeout-minutes: 50
-    strategy:
-      fail-fast: false
-      matrix:
-        input: [cube-certificates, prior-finite-checks]
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           repository: DomTheDeveloper/formal-conjectures
-          ref: 0e13442afa3ae06a468dbf57d6bd6c730f712ba0
+          ref: 01f4f642210f5ea19d954bb1c74fee20d32d112f
           path: proof
           persist-credentials: false
           sparse-checkout: A038098
@@ -53,43 +49,21 @@ jobs:
             upstream/conjectures/schoenfeld-rh/.lake/build
             upstream/conjectures/erdos-985/.lake/build
           key: a038098-schoenfeld-f34a54829210-linux-436-v1
-      - name: Replay the unconditional cube certificates on Lean 4.36
-        if: matrix.input == 'cube-certificates'
+      - name: Restore the independently rebuilt earlier finite checks
+        uses: actions/cache/restore@v4
+        with:
+          path: upstream/conjectures/schoenfeld-rh/.lake/build/lib/lean/Schoenfeld
+          key: a038098-prior-finite-f34a54829210-v1
+          fail-on-cache-miss: true
+      - name: Check the finite cube range and print the full dependency list
         working-directory: upstream/conjectures/schoenfeld-rh
         run: |
           set -eo pipefail
           cp -R "$GITHUB_WORKSPACE/proof/A038098" .
-          mkdir -p .lake/build/lib/lean/A038098/Certificate
-          for mod in Sieve Wide Trial; do
+          mkdir -p .lake/build/lib/lean/A038098/External
+          for mod in Analytic Envelope FiniteEnvelope; do
             lake env lean -o ".lake/build/lib/lean/A038098/$mod.olean" "A038098/$mod.lean"
           done
-          python3 A038098/generate_packed.py
-          while IFS= read -r file; do
-            echo "Checking $file"
-            lake env lean -j1 --tstack=65536 -o ".lake/build/lib/lean/${file%.lean}.olean" "$file"
-          done < A038098/Certificate/modules.txt
-          lake env lean -j1 --tstack=65536 -o .lake/build/lib/lean/A038098/PackedCases.olean A038098/PackedCases.lean
-          lake env lean -j1 --tstack=65536 -o .lake/build/lib/lean/A038098/Cases.olean A038098/Cases.lean | tee "$RUNNER_TEMP/small.log"
-          grep -F 'Sun.CubeSieve.cubes_two_to_two_hundred' "$RUNNER_TEMP/small.log"
-          if grep -E 'sorryAx|native_decide|ofReduceBool|trustCompiler' "$RUNNER_TEMP/small.log"; then exit 1; fi
-      - name: Save checked small cubes for the combined proof
-        if: matrix.input == 'cube-certificates'
-        uses: actions/cache/save@v4
-        with:
-          path: upstream/conjectures/schoenfeld-rh/.lake/build/lib/lean/A038098
-          key: a038098-small436-0e13442afa3a-v1
-      - name: Build the earlier theorem's independent finite checks
-        if: matrix.input == 'prior-finite-checks'
-        working-directory: upstream/conjectures/schoenfeld-rh
-        run: |
-          set -eu
-          for i in $(seq -w 0 19); do
-            lake build "+Schoenfeld.PsiCert.Chunks.C$i:olean"
-          done
-          lake build +Schoenfeld.WithRosser:olean +Schoenfeld.Check.Pi:olean
-      - name: Save the earlier numerical lemmas separately
-        if: matrix.input == 'prior-finite-checks'
-        uses: actions/cache/save@v4
-        with:
-          path: upstream/conjectures/schoenfeld-rh/.lake/build/lib/lean/Schoenfeld
-          key: a038098-prior-finite-f34a54829210-v1
+          lake env lean -o .lake/build/lib/lean/A038098/External/Small.olean A038098/External/Small.lean | tee "$RUNNER_TEMP/short.log"
+          grep -F 'Sun.CubeBridge.cubes_200_to_2153_checked' "$RUNNER_TEMP/short.log"
+          if grep -E 'sorryAx|ofReduceBool|trustCompiler' "$RUNNER_TEMP/short.log"; then exit 1; fi
