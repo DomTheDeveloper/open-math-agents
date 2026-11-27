@@ -1,0 +1,25 @@
+name = "ConsecutiveCubeCount"
+version = "1.0.0"
+defaultTargets = ["FromRH"]
+
+[[require]]
+name = "tree"
+git = "https://github.com/leanprover-community/riemann-hypothesis.git"
+rev = "507a75d91d131d627b380df4e32f6e9fb21dd067"
+
+[[require]]
+name = "Schoenfeld"
+git = "https://github.com/senamakel/schoenfeld-rh.git"
+rev = "0d24a0c5eac14301655ed2c65163404560e07892"
+
+[[lean_lib]]
+name = "CubeBound"
+
+[[lean_lib]]
+name = "Small"
+
+[[lean_lib]]
+name = "FromRH"
+
+[[lean_lib]]
+name = "ExplicitFormula"
