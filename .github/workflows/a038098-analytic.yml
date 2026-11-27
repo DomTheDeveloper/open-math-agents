@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           repository: DomTheDeveloper/formal-conjectures
-          ref: cfd8a6bb1bf7a39e725fa7611e2b5c8f3238cc86
+          ref: 11460908c492fbec47361151c4a3001a04261248
           persist-credentials: false
       - name: Install pinned Lean toolchain
         run: |
@@ -26,13 +26,18 @@ jobs:
         env:
           MATHLIB_NO_CACHE_ON_UPDATE: 1
         run: |
-          lake exe cache get Mathlib.NumberTheory.Chebyshev Mathlib.Analysis.Real.Pi.Bounds Mathlib.Analysis.Complex.ExponentialBounds Mathlib.Tactic.Linarith Mathlib.Tactic.Positivity Mathlib.Analysis.SpecialFunctions.Pow.Deriv Mathlib.Analysis.Calculus.Deriv.Shift Mathlib.Analysis.Calculus.MeanValue
+          lake exe cache get Mathlib.NumberTheory.Chebyshev Mathlib.Analysis.Real.Pi.Bounds Mathlib.Analysis.Complex.ExponentialBounds Mathlib.Tactic.Linarith Mathlib.Tactic.Positivity Mathlib.Analysis.SpecialFunctions.Pow.Deriv Mathlib.Analysis.Calculus.Deriv.Shift Mathlib.Analysis.Calculus.MeanValue Mathlib.MeasureTheory.Integral.IntegralEqImproper Mathlib.Analysis.SpecialFunctions.Pow.Asymptotics
       - name: Verify the analytic deductions
         run: |
           set -eo pipefail
           mkdir -p .lake/build/lib/lean/A038098
           lake env lean -o .lake/build/lib/lean/A038098/Analytic.olean A038098/Analytic.lean | tee "$RUNNER_TEMP/a038098-analytic.log"
-          for mod in Envelope FiniteEnvelope Middle Zeros IntegerSmoothing; do
+          for mod in Envelope FiniteEnvelope Middle; do
             lake env lean -o ".lake/build/lib/lean/A038098/$mod.olean" "A038098/$mod.lean" | tee -a "$RUNNER_TEMP/a038098-analytic.log"
           done
+          failed=0
+          for mod in Zeros IntegerSmoothing ZeroCounts; do
+            if ! lake env lean -o ".lake/build/lib/lean/A038098/$mod.olean" "A038098/$mod.lean" | tee -a "$RUNNER_TEMP/a038098-analytic.log"; then failed=1; fi
+          done
           if grep -E 'sorryAx|ofReduceBool|native_decide|trustCompiler' "$RUNNER_TEMP/a038098-analytic.log"; then exit 1; fi
+          exit "$failed"
