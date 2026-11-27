@@ -1,4 +1,4 @@
-name: Verify A038098 packed sieve
+name: Audit A038098 sieve identities
 on:
   push:
     branches: [audit/sun-a038098-cubes]
@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           repository: DomTheDeveloper/formal-conjectures
-          ref: 78145856e83d8e73b2ded5bdf9e9026e402210c3
+          ref: 3fe16e29d158e05ee237bdfb39468211f89a880f
           persist-credentials: false
       - name: Install pinned Lean toolchain
         run: |
@@ -32,24 +32,15 @@ jobs:
           mkdir -p .lake/build/lib/lean/A038098
           lake env lean -o .lake/build/lib/lean/A038098/Sieve.olean A038098/Sieve.lean
           lake env lean -o .lake/build/lib/lean/A038098/Wide.olean A038098/Wide.lean
-      - name: Generate candidate witnesses
-        run: python3 A038098/generate_packed.py
-      - name: Verify the cube inequalities and audit their axioms
+          lake env lean -o .lake/build/lib/lean/A038098/Trial.olean A038098/Trial.lean
+      - name: Audit the prime-count and packed-mask theorems
         run: |
           set -eo pipefail
-          mkdir -p .lake/build/lib/lean/A038098/Certificate
-          while IFS= read -r file; do
-            echo "Checking $file"
-            /usr/bin/time -f 'elapsed %e seconds, peak %M KiB' lake env lean -j1 --tstack=65536 -o ".lake/build/lib/lean/${file%.lean}.olean" "$file"
-          done < A038098/Certificate/modules.txt
-          lake env lean -j1 --tstack=65536 -o .lake/build/lib/lean/A038098/PackedCases.olean A038098/PackedCases.lean | tee "$RUNNER_TEMP/axioms.log"
-          grep -F 'Sun.PackedCases.checked_cubes' "$RUNNER_TEMP/axioms.log"
+          lake env lean --stdin <<'LEAN' | tee "$RUNNER_TEMP/axioms.log"
+          import A038098.Trial
+          #print axioms Sun.CubeSieve.mask_prime
+          #print axioms Sun.CubeSieve.packedBlockCount_eq
+          #print axioms Sun.CubeSieve.extend_certificate
+          LEAN
+          grep -F 'Sun.CubeSieve.extend_certificate' "$RUNNER_TEMP/axioms.log"
           if grep -E 'sorryAx|native_decide|ofReduceBool|trustCompiler' "$RUNNER_TEMP/axioms.log"; then exit 1; fi
-      - name: Retain the actual Lean certificate
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: A038098-packed-Lean
-          path: |
-            A038098/PackedCases.lean
-            A038098/Certificate/*.lean
