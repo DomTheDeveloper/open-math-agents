@@ -1,0 +1,26 @@
+name: Check the Mills interval
+on:
+  push:
+    branches: [palomar/mills-ten-decimals]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: leanprover/lean-action@38fbc41a8c28c4cbaec22d7f7de508ec2e7c0dd9
+        with:
+          auto-config: false
+          use-mathlib-cache: true
+          build: true
+          build-args: Challenge Solution
+      - name: Inspect the proved declaration
+        run: |
+          echo 'import Solution' > "$RUNNER_TEMP/Audit.lean"
+          echo '#print axioms Mills.lower_bound_of_RH' >> "$RUNNER_TEMP/Audit.lean"
+          lake env lean "$RUNNER_TEMP/Audit.lean"
