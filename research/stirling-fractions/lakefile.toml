@@ -1,0 +1,7 @@
+name = "stirling_transform_identities"
+version = "1.0.0"
+defaultTargets = ["StirlingResults"]
+
+[[lean_lib]]
+name = "StirlingResults"
+roots = ["ContinuedFractions", "ResidueCertificates", "DyadicPower"]

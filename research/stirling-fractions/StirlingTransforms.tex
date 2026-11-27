@@ -1,0 +1,206 @@
+\documentclass[11pt,letterpaper]{article}
+\usepackage[margin=.86in,top=.78in,bottom=.80in]{geometry}
+\usepackage{amsmath,amssymb,booktabs,array,xcolor,fancyhdr,microtype,hyperref}
+\definecolor{ink}{HTML}{162A42}\definecolor{accent}{HTML}{176865}
+\hypersetup{colorlinks=true,urlcolor=accent,linkcolor=accent,pdftitle={Stirling transforms, continued fractions and exact dyadic cycles}}
+\pagestyle{fancy}\fancyhf{}\renewcommand{\headrulewidth}{0pt}
+\fancyfoot[L]{\footnotesize\color{accent}Stirling transforms and exact dyadic cycles}\fancyfoot[R]{\footnotesize\color{accent}\thepage}
+\setlength{\parindent}{0pt}\setlength{\parskip}{6pt}\setlength{\footskip}{24pt}
+\newcommand{\head}[1]{\vspace{3pt}{\large\sffamily\bfseries\color{ink}#1}\par}
+\newcommand{\kicker}[1]{{\footnotesize\sffamily\bfseries\color{accent}#1}\par}
+\newcommand{\oeis}[1]{\href{https://oeis.org/#1}{#1}}\newcommand{\sn}[2]{\genfrac{\{}{\}}{0pt}{}{#1}{#2}}
+\newcommand{\Z}{\mathbb Z}\newcommand{\val}{v_2}
+\begin{document}
+\kicker{COMBINATORICS AND NUMBER THEORY \hfill 26 NOVEMBER 2026}
+\vspace{3pt}{\fontsize{24.88}{29}\selectfont\sffamily\bfseries\color{ink}Stirling transforms, continued fractions\\ and exact dyadic cycles}\par
+Six continued fractions proposed by Peter Bala in the OEIS follow from a classical identity of Stieltjes. Two further conjectured identities concern \oeis{A305404} and \oeis{A375948}. The arithmetic theorem in this note gives the least period and its earliest starting index, modulo every power of two, for an entire family of integer sequences.
+
+\head{Six continued fractions from one identity}
+Let $a,u,v$ be parameters, put $\delta=v-u$, and for $j\ge0$ set
+\[
+ \alpha_{2j+1}=a+ju,\qquad \alpha_{2j+2}=(j+1)v.
+\]
+Write $\sn nk$ for a Stirling number of the second kind and define
+\[
+ m_n=\sum_{k=0}^n\sn nk\,\delta^{n-k}\prod_{i=0}^{k-1}(a+iu).
+\]
+Then the ordinary generating function is the Stieltjes fraction
+\[
+ \sum_{n\ge0}m_n z^n=\cfrac{1}{1-\cfrac{\alpha_1z}{1-\cfrac{\alpha_2z}{1-\cfrac{\alpha_3z}{\ddots}}}}. \tag{1}
+\]
+Each specialization below gives the precise coefficients in the OEIS proposal. In the last three rows $x$ is an indeterminate, so the resulting identity holds for every coefficient in every row polynomial.
+\begin{center}\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{@{}lccc l@{}}\toprule
+OEIS entry &$a$&$u$&$v$&Exponential generating function\\\midrule
+\oeis{A305404}&1&2&3&$(3-2e^t)^{-1/2}$\\
+\oeis{A354242}&2&4&5&$(5-4e^t)^{-1/2}$\\
+\oeis{A354253}&4&8&9&$(9-8e^t)^{-1/2}$\\
+\oeis{A079641}&$x$&1&2&$(2-e^t)^{-x}$\\
+\oeis{A195204}&$2x$&2&1&$[e^t/(2-e^t)]^x$\\
+\oeis{A195205}&$3x$&3&2&$[e^t/(3-2e^t)]^x$\\\bottomrule
+\end{tabular}\end{center}
+Sokal and Zeng give (1) and the Stirling formula in equations (2.2), (2.3) and (2.12), with their four variables set to $(a,v,u,v)$. They credit Stieltjes, section 81, for the continued fraction [1]. The table identifies the six applications. The proof on the next page also supplies a recurrence that can be verified for all indices in Lean.
+
+\newpage\kicker{CONTINUED FRACTIONS}\head{One polynomial operator, two expansions}
+For an indeterminate $X$ define
+\[
+ D f=(1+uX)(1+vX)f'+a(1+vX)f,\qquad L_n(f)=(D^n f)(0).
+\]
+If $f_k=(1+vX)^k$, then $v(1+uX)=\delta+u(1+vX)$ gives
+\[
+ D f_k=k\delta f_k+(a+ku)f_{k+1}.
+\]
+Starting with $f_0$, the coefficient carried to $f_k$ after $n$ iterations is $\sn nk\delta^{n-k}\prod_{i<k}(a+iu)$. This follows by induction from $\sn{n+1}k=k\sn nk+\sn n{k-1}$. Since all $f_k(0)=1$, this proves $L_n(1)=m_n$, including parameter values for which the $f_k$ are dependent. On monomials the same operator gives
+\[
+ D X^k=kX^{k-1}+[a+(u+v)k]X^k+v(a+ku)X^{k+1}. \tag{2}
+\]
+At $k=0$ the first term is absent. Interpret two successive steps on the nonnegative integer heights as one application of $D$. At even height $2k$, upward and downward steps have weights $a+ku$ and $k$. At odd height $2k+1$, upward and downward steps have weights $v$ and $1$. Two up-steps have weight $v(a+ku)$, two down-steps have weight $k$, and the two paths back to the starting height have total weight $a+(u+v)k$. Consequently $L_n(1)$ is the total weight of the excursions from zero to zero in $2n$ steps.
+
+For a path starting and ending at height $h$ and never going below it, let $E_h(z)$ count such excursions by half-length and weight. Decompose a nonempty path at its first return to $h$. This gives
+\[
+ E_h=1+\alpha_{h+1}zE_{h+1}E_h.
+\]
+Solving for $E_h$ and iterating gives (1) with $E_0=\sum m_nz^n$. Only heights up to $n$ enter the coefficient of $z^n$. This use of weighted paths is classical [2].
+
+\head{Identifying the six source sequences}
+All six rows have $u\delta\ne0$. Summing the finite formula by using $\sum_{n\ge k}\sn nk x^n/n!=(e^x-1)^k/k!$ gives
+\[
+ \sum_{n\ge0}m_n\frac{t^n}{n!}
+ =\sum_{k\ge0}\frac{\prod_{i<k}(a+iu)}{k!}
+       \left(\frac{e^{\delta t}-1}{\delta}\right)^k
+ =\left(\frac{\delta}{v-u e^{\delta t}}\right)^{a/u}.
+\]
+Inserting the parameters on page 1 gives the published exponential generating functions and hence the stated ordinary continued fractions.
+
+\newpage\kicker{TWO FURTHER OEIS IDENTITIES}\head{Rattaggi's infinite series for A305404}
+Write $X(t)=(3-2e^t)^{-1/2}$ and $x_n=X^{(n)}(0)$. The central-binomial expansion gives
+\[
+ X(t)=\frac1{\sqrt3}\sum_{k\ge0}\binom{2k}{k}\frac{e^{kt}}{6^k},\qquad
+ x_n=\frac1{\sqrt3}\sum_{k\ge0}\binom{2k}{k}\frac{k^n}{6^k}. \tag{3}
+\]
+Indeed $\binom{2k}{k}\le4^k$, so the series and all its fixed-order derivatives converge uniformly on any closed disk $|t|\le r<\log(3/2)$. Termwise differentiation proves Diego Rattaggi's 2020 conjecture for every $n\ge0$, with $0^0=1$.
+
+\head{Kurkov's coupled recurrence for A375948}
+Let $A(t)=(3-2e^t)^{-3/2}$, let $a_n=A^{(n)}(0)$, and set $B=X'$. Differentiation gives
+\[
+ B=e^t A,\qquad (3-2e^t)A=X,\qquad B'=B+e^t A'.
+\]
+If $b_n=B^{(n)}(0)$, then $b_n=x_{n+1}$. Taking $n$ derivatives of the middle identity and $n-1$ derivatives of the last at zero yields, for $n\ge1$,
+\[
+ \begin{aligned}
+ a_n&=b_{n-1}+2\sum_{j=0}^{n-1}\binom nj a_j,\\
+ b_n&=b_{n-1}+\sum_{j=0}^{n-1}\binom{n-1}j a_{j+1}.
+ \end{aligned} \tag{4}
+\]
+The initial conditions are $a_0=b_0=1$. At each step these identities determine $a_n$ first and then $b_n$. This proves the recurrence and identifies the unique auxiliary sequence in Mikhail Kurkov's 2026 conjecture. Its first terms are $1,4,25,217,2416$, the terms of A305404 beginning at index 1.
+
+\head{An arithmetic family}
+For an integer $c$ define
+\[
+ a_c(n)=\sum_{k=0}^n\sn nk c^k(2k-1)!!,\qquad
+ \sum_{n\ge0}a_c(n)t^n/n!=\bigl[1-2c(e^t-1)\bigr]^{-1/2}. \tag{5}
+\]
+Here $(-1)!!=1$. This is the specialization $(a,u,v)=(c,2c,2c+1)$ of the finite formula. The cases $c=1,2,3,4$ are \oeis{A305404}, \oeis{A354242}, \oeis{A354252} and \oeis{A354253}. An earlier note found the least eventual periods of $c=2,4$ for all moduli [3]. At powers of two we can now determine the least period and the exact starting index for \emph{every} integer $c$.
+
+\newpage\kicker{ARITHMETIC THEOREM}\head{Earliest start and least period modulo every power of two}
+For $e\ge1$ let $T$ be the least positive eventual period of $a_c(n)\bmod 2^e$. Let $N$ be the first index with $a_c(n+T)\equiv a_c(n)\pmod{2^e}$ for every $n\ge N$.
+
+\textbf{Theorem.} If $c=0$, then $(N,T)=(1,1)$. If $c$ is odd, then
+\[
+ N=0,\qquad T=\begin{cases}3&e=1,\\3\cdot2^e&e\ge2.\end{cases} \tag{6}
+\]
+For $c=2b\ne0$, put $t=\val(b)$, $d=3t+3$ and $\ell=3t+4+\mathbf1_{t=0}$. Then
+\[
+ N=\max(1,e-1-2t),\qquad
+ T=\begin{cases}1&e\le d,\\2^{\max(1,e-\ell)}&e>d.\end{cases} \tag{7}
+\]
+Here $\val(b)$ counts factors of 2 in $|b|$. Modulo 64, for example, the results are
+\begin{center}\renewcommand{\arraystretch}{1.17}
+\begin{tabular}{@{}rlrrl@{}}\toprule
+$c$&OEIS entry&First index $N$&Least period $T$&Values for the short cycles\\\midrule
+1&\oeis{A305404}&0&192&\\
+2&\oeis{A354242}&5&2&$46,22,46,22,\ldots$\\
+3&\oeis{A354252}&0&192&\\
+4&\oeis{A354253}&3&1&$20,20,20,\ldots$\\\bottomrule
+\end{tabular}\end{center}
+
+\head{Odd parameters and the block matrix}
+Let $J$ be the monomial matrix of (2), truncated to any even size $L$. Its three diagonals are
+\[
+ J_{k-1,k}=k,\qquad J_{kk}=c+(4c+1)k,\qquad
+ J_{k+1,k}=c(2c+1)(2k+1).
+\]
+Retain only entries inside the matrix. For $r<L$, $(J^r)_{00}=a_c(r)$ since a walk of $r$ steps cannot visit height $L$. At each application below choose $L$ larger than every exponent under comparison.
+
+Work in $R=\Z[\pi]$ with $\pi=\sqrt2$. Let $S_{kk}=\pi^{\lfloor k/2\rfloor}$ and form $B=SJS^{-1}$. Across adjacent pairs of heights an upward entry acquires a factor $\pi$, and a downward entry $2k$ becomes $k\pi$. Thus $B$ has entries in $R$. For odd $c$, reducing $B$ modulo $\pi$ gives identical diagonal blocks $\left(\begin{smallmatrix}1&1\\1&0\end{smallmatrix}\right)$ over $\mathbb F_2$. Each block cubes to the identity. Consequently $B^3=I+\pi X$, $B^6=I+2Y$ and $B^{12}=I+4Z$ for matrices over $R$, by successive squaring.
+
+\newpage\kicker{PROOF OF THE DYADIC CLASSIFICATION}\head{Lifting the odd cycles and proving minimality}
+For $s\ge2$ repeated squaring of $B^{12}=I+4Z$ gives
+\[
+ B^{3\cdot2^s}-I\equiv2^{s-2}(B^{12}-I)\pmod{2^{s+1}}. \tag{8}
+\]
+Indeed, when $2^s\mid U-I$ entrywise, $(U^2-I)-2(U-I)=(U-I)^2$ is divisible by $2^{s+2}$ for $s\ge2$. Multiply the congruences by $B^n$ and take the $(0,0)$ entry, which diagonal conjugation preserves. Since $2^jR\cap\Z=2^j\Z$ and $\pi R\cap\Z=2\Z$, a period from index zero is 3 mod 2 and $3\cdot2^e$ mod $2^e$ for $e\ge2$.
+
+The mod-2 cycle is $1,1,0$, so 3 divides every eventual period. For a sequence periodic from zero, a shift valid on a tail is valid from zero by translation along the known cycle. For each of the four odd residues $c$ mod 8, direct substitution in (5) gives
+\[
+ a_c(0)=1,\qquad a_c(6)\equiv3\pmod4,\qquad a_c(12)\equiv5\pmod8.
+\]
+These four residue checks cover all odd integers since $a_c(n)$ is a polynomial in $c$ over $\Z$. The first difference excludes shift 6 mod 4. By (8), $a_c(3\cdot2^s)-1\equiv2^s\bmod 2^{s+1}$ for $s\ge2$, excluding half the stated period at every higher power. A least eventual period divides any eventual period by division with remainder. Together with the factor 3 this proves (6).
+
+\head{Even parameters as finite sums of integer powers}
+For $c=2b\ne0$ put $g_k=b^k\binom{2k}{k}$. Given $m=2^e$, take any sufficiently large $K$ with $m\mid K!$. Then
+\[
+ P_K(y)=\sum_{k<K}g_k(y-1)^k=\sum_{j<K}w_jy^j,\qquad
+ a_c(n)\equiv\sum_{j<K}w_j j^n\pmod m. \tag{9}
+\]
+Indeed $c^k(2k-1)!!=k!g_k$ and $k!\sn nk=\sum_{j=0}^k(-1)^{k-j}\binom kj j^n$ by inclusion--exclusion. Every omitted term is a multiple of $m$.
+
+The odd-base sum in (9) is purely periodic with period a power of two since every odd base is a unit. The even-base sum $H_n$ vanishes for $n\ge e$. This shows that the least eventual period is a power of two. It also shows that the earliest start is exactly the first index from which $H_n$ vanishes identically. To see necessity, if the full sequence repeats from an earlier index, advance by a large common multiple of its period and the unit period, where $H_n=0$, and compare. Since $a_c(0)$ is odd and all subsequent terms are even, $N\ge1$. The case $c=0$ follows directly from (5).
+
+\newpage\kicker{PROOF OF THE DYADIC CLASSIFICATION}\head{How long the transient lasts}
+For $n\ge1$, $H_n=2^n\sum_{2j<K}w_{2j}j^n$. For arbitrarily large truncations in (9) the inner sum has valuation $1+2t$.
+
+If $t\ge1$, each $g_k$ for $k\ge3$ is a multiple of $2^{2t+2}$ because $\binom{2k}{k}$ is even and $kt+1\ge2t+2$. Modulo this precision $P_K$ reduces to its terms with $k=0,1,2$. The only even base contributing for $n\ge1$ is 2, with weight $6b^2$ of valuation $1+2t$.
+
+If $t=0$, use $\val\binom{2k}{k}=s_2(k)$, the number of ones in the binary expansion of $k$, by Legendre's factorial formula. For $k>0$ only powers of two contribute mod 4. At $k=2^h$ the term is $2(y^{2^h}-1)$ modulo 4 by the binomial theorem. In $(\Z/4)[y]/(y^8-1)$ all such terms with $h\ge3$ vanish, so for $K\ge5$
+\[
+ P_K(y)=3+2y+2y^2+2y^4 .
+\]
+Grouping even indices mod 8 gives $\sum w_{2j}j^n\equiv2\bmod4$ for every $n\ge1$. The precision in (9) may be increased before reducing to the desired modulus. Thus $H_n$ vanishes mod $2^e$ for $n\ge1$ exactly when $n+1+2t\ge e$. This proves the onset in (7).
+
+\head{Least periods for even $b$}
+Let $V_s$ be the largest exponent $V$ for which $2^V$ divides $a_c(n+2^s)-a_c(n)$ for every sufficiently large $n$. Suppose $t\ge1$. For arbitrarily large $K$ in (9),
+\[
+ w_3\equiv20b^3\pmod{2^{3t+3}},\qquad w_j\equiv0\pmod{2^{3t+3}}\quad(j\ge5).
+\]
+The $k=4$ term in $w_3$ is $-4\binom84 b^4$, of valuation $3+4t$. For $k\ge5$ the valuation of $g_k$ is at least $1+5t\ge3t+3$. Hence $\val(w_3)=3t+2$. The base 1 has zero difference. For $s=0$, $j-1$ is even for each odd $j$, with valuation exactly 1 at $j=3$. For $s\ge1$, $j^{2^s}-1$ is divisible by $2^{s+2}$ for all odd $j$, with exact valuation $s+2$ at $j=3$. This follows from the square mod 8 and successive factors $j^{2^i}+1\equiv2\bmod8$ for $i\ge1$. Multiplication by $j^n$ preserves these valuations. The term $j=3$ therefore controls the difference, giving
+\[
+ V_0=3t+3,\qquad V_s=s+3t+4\quad(s\ge1).
+\]
+
+\newpage\kicker{PROOF AND VERIFICATION}\head{Sharpness for every odd $b$}
+Set $b=1+2z$. Test a shift $2^s$ at precision $m=2^{V+1}$ with $m\mid K!$ in (9). At $n=V+1+i$ the coefficient of $z^h$ in the difference is
+\[
+ 2^h\sum_{k<K}\binom{k}{h}\binom{2k}{k}
+       \sum_{j=0}^k(-1)^{k-j}\binom kj j^n(j^{2^s}-1)\pmod m. \tag{10}
+\]
+For every row below and every $0\le i<K$, the coefficients with $1\le h<K$ are zero. The table gives the constant coefficients in order. These are finite polynomial identities, checked in the Lean kernel.
+\begin{center}\renewcommand{\arraystretch}{1.12}\begin{tabular}{@{}rrrl@{}}\toprule
+$s$&$V$&$K$&Constant coefficients\\\midrule
+0&3&6&$8,8,8,8,8,8$\\
+1&6&8&$(64,0)$ repeated four times\\
+2&7&10&$(0,128)$ repeated five times\\
+3&8&12&$(256,0)$ repeated six times\\\bottomrule\end{tabular}\end{center}
+The sequence in (9) and its shift differences obey the monic recurrence with characteristic polynomial $\prod_{j<K}(X-j)$ because each $j^n$ obeys it. Thus a window of $K$ zero residues mod $2^V$ propagates forever. Each nonzero witness mod $2^{V+1}$ recurs arbitrarily late since $n\ge V+1$ and only units remain. Hence each listed $V$ is the exact $V_s$, uniformly in odd $b$.
+
+For odd $j$ and $s\ge1$, set $L_s=(j^{2^s}-1)/2^{s+2}$. Squaring gives $L_{s+1}=L_s+2^{s+1}L_s^2$, so $L_s\equiv L_3\bmod16$ for $s\ge3$. Writing $\Delta_s(n)=a_c(n+2^s)-a_c(n)$, use (9) at the same precision for both shifts to obtain
+\[
+ \Delta_s(n)\equiv2^{s-3}\Delta_3(n)\pmod{2^{s+6}}\qquad(n\ge s+6).
+\]
+This yields $V_0=3$ and $V_s=s+5$ for all $s\ge1$. For every $t$, the least period is the first $2^s$ for which $e\le V_s$, proving (7).
+
+\head{Sources and reproducibility}
+\small [1] A. D. Sokal and J. Zeng, \emph{Some multivariate master polynomials for permutations, set partitions, and perfect matchings, and their continued fractions}, Adv. Appl. Math. 138 (2022), 102341, pp. 4--8 and section 5.1. \href{https://doi.org/10.1016/j.aam.2022.102341}{Journal article.}\par
+[2] P. Flajolet, \emph{Combinatorial aspects of continued fractions}, Discrete Math. 32 (1980), 125--161. \href{https://doi.org/10.1016/0012-365X(80)90050-3}{Journal article.}\par
+[3] \href{https://github.com/DomTheDeveloper/open-math-agents/blob/6ac3356a6c8ec804cee7b17aa714278711db2376/research/exact-stirling-periods/ExactPeriods.pdf}{Earlier note on A354242 and A354253}. The linked OEIS entries give the proposals and source generating functions. The independent verification compares 192 displayed integers and 490 pairs $(c,e)$. The dyadic classification has a written proof and kernel-checked finite certificates. Historical priority for this classification is unverified.
+\end{document}

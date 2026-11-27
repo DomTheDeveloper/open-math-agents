@@ -1,0 +1,28 @@
+Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release)
+
+Independent clean build using lake build
+info: stirling_transform_identities: no previous manifest, creating one from scratch
+info: toolchain not updated; already up-to-date
+ℹ [2/5] Built ContinuedFractions (1.0s)
+info: ContinuedFractions.lean:70:0: 'AffineFractions.all_coefficients' depends on axioms: [propext, Classical.choice, Quot.sound]
+ℹ [3/5] Built DyadicPower (1.0s)
+info: DyadicPower.lean:50:0: 'DyadicPower.odd_shift_lift' depends on axioms: [propext, Classical.choice, Quot.sound]
+ℹ [4/5] Built ResidueCertificates (1.0s)
+info: ResidueCertificates.lean:36:0: 'ResidueCertificates.odd_b_shift_one' does not depend on any axioms
+info: ResidueCertificates.lean:37:0: 'ResidueCertificates.odd_b_shift_two' does not depend on any axioms
+info: ResidueCertificates.lean:38:0: 'ResidueCertificates.odd_b_shift_four' does not depend on any axioms
+info: ResidueCertificates.lean:39:0: 'ResidueCertificates.odd_b_shift_eight' does not depend on any axioms
+info: ResidueCertificates.lean:40:0: 'ResidueCertificates.odd_c_small' does not depend on any axioms
+Build completed successfully (5 jobs).
+
+python3 -B verify.py --oeis-dir /path/to/pinned/entries
+Six continued fractions matched through degree 24. Polynomial identities used 25 distinct x values and degree at most 24.
+The coupled recurrence and the A305404 shift matched through n=60.
+Matched all 192 displayed integers in seven OEIS entries: {'A079641': 46, 'A195204': 36, 'A195205': 36, 'A305404': 20, 'A354242': 18, 'A354253': 17, 'A375948': 19}.
+490 signed parameter/modulus pairs checked (integers -24 through 24, exponents 1 through 10). Both the least period and earliest starting index matched in all 490.
+c=1 modulo 64: first index 0, period 192
+c=2 modulo 64: first index 5, period 2, repeating block [46, 22]
+c=3 modulo 64: first index 0, period 192
+c=4 modulo 64: first index 3, period 1, repeating block [20]
+
+OEIS export commit 976b0c73e00453b1c1e6f16d83108cb9bb744c3b
