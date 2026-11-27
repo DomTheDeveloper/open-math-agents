@@ -1,0 +1,55 @@
+name: Check finite and polynomial consequences
+on:
+  push:
+    branches: [research/november-proof-consequences]
+    paths:
+      - 'research/november-2026/SharpIdoneal.lean'
+      - 'research/november-2026/PositivePolynomial.lean'
+      - '.github/workflows/check-november-finite.yml'
+permissions:
+  contents: read
+jobs:
+  proofs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: anthropics/formal-math
+          ref: 11b6c7e3c927df2658f513b6b68ea7f8929c62c5
+          path: upstream
+          persist-credentials: false
+      - name: Install the pinned Lean toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          curl --fail --location --silent --show-error --retry 3 https://github.com/leanprover/elan/releases/download/v4.2.3/elan-x86_64-unknown-linux-gnu.tar.gz -o elan.tar.gz
+          mkdir -p november-elan
+          tar -xzf elan.tar.gz -C november-elan
+          ./november-elan/elan-init -y --no-modify-path --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check the factor obstruction and polynomial identity
+        working-directory: upstream/vp-vnp
+        shell: bash
+        run: |
+          set -euo pipefail
+          lake exe cache get
+          mkdir -p "$RUNNER_TEMP/november-checked"
+          for proof in IdonealFactorWindow SharpIdoneal PositivePolynomial; do
+            cp "../../research/november-2026/$proof.lean" .
+            LEAN_PATH="$RUNNER_TEMP/november-checked:$(lake env printenv LEAN_PATH)" lean -o "$RUNNER_TEMP/november-checked/$proof.olean" "$proof.lean"
+          done
+          cat > AuditFinite.lean <<'LEAN'
+          import SharpIdoneal
+          import PositivePolynomial
+          #print axioms IdonealFactorWindow.least_first_at_136173
+          #print axioms PositivePolynomial.eq_of_equal_on_positive_box
+          LEAN
+          LEAN_PATH="$RUNNER_TEMP/november-checked:$(lake env printenv LEAN_PATH)" lean AuditFinite.lean | tee finite-audit.txt
+          python ../../research/november-2026/check_axioms.py finite-audit.txt 2
+          python ../../research/november-2026/first_term_search.py --limit 100000000
+          c++ -O3 -std=c++17 ../../research/november-2026/first_term_bitset.cpp -o "$RUNNER_TEMP/check-idoneal"
+          "$RUNNER_TEMP/check-idoneal"
+          python ../../research/november-2026/matching_check.py
