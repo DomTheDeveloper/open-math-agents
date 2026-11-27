@@ -1,23 +1,34 @@
-import Eight
+import Exact
 import Main
 import Solution
+import Robin1984.Finite.RobinFiniteStartupCATangentEndpoints
+import Robin1984.Finite.RobinTangentStartupComplete
 
-theorem robin_residual_nonnegative_after {k : ℕ} (hk : 5040 < k) :
-    0 ≤ RobinSigns.residual k :=
-  RobinSigns.nonnegative_after
+namespace RobinSigns
+
+private theorem after_cutoff {k : ℕ} (hk : 5040 < k) : 0 ≤ residual k :=
+  nonnegative_after
     (Robin1984.robin_inequality_iff_riemannHypothesis.mpr riemannHypothesis) hk
 
-#print axioms robin_residual_nonnegative_after
+private theorem classified (n : ℕ) (hn : n ≤ 5040) :
+    RobinChampions.IsCA n ↔ n ∈ RobinChampions.listed := by
+  have peak := Robin1984.colossallyAbundantWith_5040_at_cutoff
+  exact RobinChampions.ca_prefix (1 + Robin1984.ca5040To55440Cutoff)
+    (by linarith [peak.1])
+    (by linarith [Robin1984.ca5040To55440Cutoff_lt_one_div_27])
+    (fun m hm => peak.2.2 m hm) n hn
 
-/-- On any nondecreasing list with the certified eight-term prefix and the
-next entry above 5040, exactly the first eight values of the residual are negative. -/
-theorem eight_terms_exact (a : ℕ → ℕ) (ordered : Monotone a)
-    (prefix : ∀ i : Fin 8, a i ∈ ([2,6,12,60,120,360,2520,5040] : List ℕ))
-    (next : 5040 < a 8) (i : ℕ) : RobinSigns.residual (a i) < 0 ↔ i < 8 := by
-  by_cases h : i < 8
-  · exact ⟨fun _ => h, fun _ => RobinSigns.eight_negative _ (prefix ⟨i,h⟩)⟩
-  · have hi : 8 ≤ i := by omega
-    have hnonneg := robin_residual_nonnegative_after (next.trans_le (ordered hi))
-    exact ⟨fun hn => False.elim (hn.not_ge hnonneg), fun hi => False.elim (h hi)⟩
+theorem exactly_eight_arguments (n : ℕ) :
+    (RobinChampions.IsCA n ∧ residual n < 0) ↔ n ∈ RobinChampions.listed :=
+  negative_arguments classified after_cutoff n
 
-#print axioms eight_terms_exact
+/-- The zero-based offsets 0 to 7 are exactly OEIS indices 2 through 9. -/
+theorem oeis_A279702 (a : ℕ → ℕ) (ha : StrictMono a)
+    (enumerates : ∀ n, RobinChampions.IsCA n ↔ ∃ i, a i = n) (i : ℕ) :
+    residual (a i) < 0 ↔ i < 8 :=
+  index_iff classified after_cutoff a ha enumerates i
+
+#print axioms exactly_eight_arguments
+#print axioms oeis_A279702
+
+end RobinSigns

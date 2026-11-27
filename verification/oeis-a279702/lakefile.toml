@@ -20,3 +20,9 @@ name = "FromRH"
 
 [[lean_lib]]
 name = "Eight"
+
+[[lean_lib]]
+name = "Champions"
+
+[[lean_lib]]
+name = "Exact"
