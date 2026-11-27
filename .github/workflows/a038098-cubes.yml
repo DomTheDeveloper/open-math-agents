@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           repository: DomTheDeveloper/formal-conjectures
-          ref: 8767a9c8d65a7503b69e16c0d8e4bb538af45bfd
+          ref: b8651b2728dbc5a50178a96476acdc06a9679ce9
           persist-credentials: false
       - name: Install pinned Lean toolchain
         run: |
@@ -71,7 +71,8 @@ jobs:
         run: |
           set -eo pipefail
           lake env lean -j1 --tstack=65536 -o .lake/build/lib/lean/A038098/PackedCases.olean A038098/PackedCases.lean | tee "$RUNNER_TEMP/axioms.log"
-          grep -F 'Sun.PackedCases.checked_cubes' "$RUNNER_TEMP/axioms.log"
+          lake env lean -j1 --tstack=65536 -o .lake/build/lib/lean/A038098/Cases.olean A038098/Cases.lean | tee -a "$RUNNER_TEMP/axioms.log"
+          grep -F 'Sun.CubeSieve.cubes_two_to_two_hundred' "$RUNNER_TEMP/axioms.log"
           if grep -E 'sorryAx|native_decide|ofReduceBool|trustCompiler' "$RUNNER_TEMP/axioms.log"; then exit 1; fi
       - name: Retain the actual Lean certificate
         if: success()
