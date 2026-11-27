@@ -59,6 +59,7 @@ jobs:
         working-directory: upstream/conjectures/schoenfeld-rh
         run: |
           set -eo pipefail
+          lake build +Schoenfeld.PsiCert.Final:olean
           cp -R "$GITHUB_WORKSPACE/proof/A038098" .
           mkdir -p .lake/build/lib/lean/A038098/External
           for mod in Analytic Envelope FiniteEnvelope; do
