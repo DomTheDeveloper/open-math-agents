@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           repository: DomTheDeveloper/formal-conjectures
-          ref: 94abaa6d61d169e6e6acae67897149a28793dc07
+          ref: ebc7278d54c9332d8099e30fe70b7dc76bb586cb
           path: proof
           persist-credentials: false
           sparse-checkout: A038098
@@ -82,3 +82,83 @@ jobs:
           LEAN
           grep -F "sun_six_million_of_RH_and_Rosser" "$RUNNER_TEMP/bridge.log"
           if grep -E 'sorryAx|ofReduceBool|native_decide|trustCompiler' "$RUNNER_TEMP/bridge.log"; then exit 1; fi
+      - name: Link all intermediate cubes to the explicit formula and zero count
+        id: bridge
+        working-directory: upstream/conjectures/schoenfeld-rh
+        run: |
+          set -eo pipefail
+          for mod in FiniteEnvelope Middle Zeros IntegerSmoothing ZeroCounts ZeroWeights Geometry Budget FourSum Assembly IntegralIdentity; do
+            echo "Checking A038098/$mod.lean"
+            lake env lean -o ".lake/build/lib/lean/A038098/$mod.olean" "A038098/$mod.lean"
+          done
+          mkdir -p .lake/build/lib/lean/A038098/External
+          lake env lean -o .lake/build/lib/lean/A038098/External/Schoenfeld.olean A038098/External/Schoenfeld.lean | tee "$RUNNER_TEMP/counted.log"
+          grep -F 'Sun.CubeBridge.cubes_above_buthe_of_RH_and_Rosser' "$RUNNER_TEMP/counted.log"
+          if grep -E 'sorryAx|ofReduceBool|native_decide|trustCompiler' "$RUNNER_TEMP/counted.log"; then exit 1; fi
+      - name: Restore the Rosser zero-count proof
+        if: ${{ !cancelled() }}
+        id: rosser_cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            upstream/conjectures/schoenfeld-rh/.lake/build/lib/lean/RSBounds
+            upstream/conjectures/schoenfeld-rh/.lake/build/lib/lean/TernaryGoldbach
+            upstream/conjectures/schoenfeld-rh/.lake/build/lib/lean/Zeta23
+            upstream/conjectures/schoenfeld-rh/.lake/build/lib/lean/ZetaLean
+            upstream/conjectures/schoenfeld-rh/.lake/build/lib/lean/RHHeight*
+            upstream/conjectures/schoenfeld-rh/.lake/build/lib/lean/Hardy*
+          key: a038098-rosser-f34a54829210-linux-436-v1
+      - name: Compile the independent proof of Rosser's theorem
+        if: ${{ !cancelled() }}
+        id: rosser
+        working-directory: upstream/conjectures/schoenfeld-rh
+        run: lake build +RSBounds.Rosser1941:olean
+      - name: Cache Rosser's proof
+        if: ${{ !cancelled() && steps.rosser.outcome == 'success' && steps.rosser_cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            upstream/conjectures/schoenfeld-rh/.lake/build/lib/lean/RSBounds
+            upstream/conjectures/schoenfeld-rh/.lake/build/lib/lean/TernaryGoldbach
+            upstream/conjectures/schoenfeld-rh/.lake/build/lib/lean/Zeta23
+            upstream/conjectures/schoenfeld-rh/.lake/build/lib/lean/ZetaLean
+            upstream/conjectures/schoenfeld-rh/.lake/build/lib/lean/RHHeight*
+            upstream/conjectures/schoenfeld-rh/.lake/build/lib/lean/Hardy*
+          key: a038098-rosser-f34a54829210-linux-436-v1
+      - name: Verify the upper interval from RH alone
+        if: ${{ !cancelled() && steps.rosser.outcome == 'success' }}
+        working-directory: upstream/conjectures/schoenfeld-rh
+        run: |
+          set -eo pipefail
+          lake env lean --stdin <<'LEAN' | tee "$RUNNER_TEMP/upper-rh.log"
+          import A038098.Envelope
+          import Schoenfeld.PsiSharp
+          import RSBounds.Rosser1941
+          theorem sun_six_million_of_RH (h : RiemannHypothesis) (n : ℕ)
+              (lo : 6000000 ≤ n) (hi : n ≤ 10000000) :
+              (((n+1)^3).primeCounting : ℚ) / (((n+1)^3:ℕ):ℚ) <
+                ((n^3).primeCounting : ℚ) / ((n^3:ℕ):ℚ) :=
+            Sun.CubeAnalytic.cubes_six_million_to_ten_million (fun _ hx =>
+              Schoenfeld.psi_explicit h (fun t ht => TernaryGoldbach.RSBounds.Rosser1941.zero_count_bounds t ht) hx) n lo hi
+          #print axioms sun_six_million_of_RH
+          LEAN
+          grep -F 'sun_six_million_of_RH' "$RUNNER_TEMP/upper-rh.log"
+          if grep -E 'sorryAx|ofReduceBool|native_decide|trustCompiler' "$RUNNER_TEMP/upper-rh.log"; then exit 1; fi
+      - name: Verify every cube in the extended interval from RH alone
+        if: ${{ !cancelled() && steps.rosser.outcome == 'success' && steps.bridge.outcome == 'success' }}
+        working-directory: upstream/conjectures/schoenfeld-rh
+        run: |
+          set -eo pipefail
+          lake env lean --stdin <<'LEAN' | tee "$RUNNER_TEMP/all-rh.log"
+          import A038098.External.Schoenfeld
+          import RSBounds.Rosser1941
+          theorem sun_2154434_to_ten_million_of_RH (h : RiemannHypothesis) (n : ℕ)
+              (lo : 2154434 ≤ n) (hi : n ≤ 10000000) :
+              (((n+1)^3).primeCounting : ℚ) / (((n+1)^3:ℕ):ℚ) <
+                ((n^3).primeCounting : ℚ) / ((n^3:ℕ):ℚ) :=
+            Sun.CubeBridge.cubes_above_buthe_of_RH_and_Rosser h
+              (fun t ht => TernaryGoldbach.RSBounds.Rosser1941.zero_count_bounds t ht) n lo hi
+          #print axioms sun_2154434_to_ten_million_of_RH
+          LEAN
+          grep -F 'sun_2154434_to_ten_million_of_RH' "$RUNNER_TEMP/all-rh.log"
+          if grep -E 'sorryAx|ofReduceBool|native_decide|trustCompiler' "$RUNNER_TEMP/all-rh.log"; then exit 1; fi
