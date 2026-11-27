@@ -1,0 +1,493 @@
+import FormalConjectures.OEIS.«245211»
+
+/-!
+Jaroslav Krizek's A245211 fixed-point conjecture. For distinct primes p,q
+and any positive e, the only fixed point of the form p^e*q is 21.
+Every fixed point with prime divisor p also satisfies n ≤ p^(τ(n)-1).
+
+The full divisor moment factors on coprime arguments, as in desenyon's
+Left to Solve reduction #733. Sugui used the cofactor divisor-count budget
+in formal-conjectures #8119. The two-prime gap builds on the fixed-exponent
+calculation in umaia1234/agentic-conjectures, A245211, section 7.
+@DomTheDeveloper's two exact searches through least prime 433 are indexed
+in ProofPlaygrond #121. The finite classification there is a separate result.
+-/
+
+namespace OMA.R_OeisA245211_conjecture_R3
+
+open Finset
+open OeisA245211
+
+private theorem moment_eq {x : ℕ} (hx : x ≠ 0) :
+    (∑ d ∈ x.divisors, d * d.divisors.card) = a x + x * x.divisors.card := by
+  conv_lhs => rw [← Nat.insert_self_properDivisors hx, sum_insert Nat.self_notMem_properDivisors]
+  simp [a, add_comm]
+
+private theorem moment_mul {x y : ℕ} (h : x.Coprime y) :
+    (∑ d ∈ (x*y).divisors, d * d.divisors.card) = (∑ d ∈ x.divisors, d * d.divisors.card) * (∑ d ∈ y.divisors, d * d.divisors.card) := by
+  rw [h.divisors_mul, sum_map]
+  change (∑ z ∈ (x.divisors ×ˢ y.divisors).attach,
+    z.val.1 * z.val.2 * (z.val.1 * z.val.2).divisors.card) = _
+  rw [sum_attach (f := fun z : ℕ × ℕ => z.1*z.2*(z.1*z.2).divisors.card),
+    sum_product, sum_mul]
+  apply sum_congr rfl
+  intro i hi
+  rw [mul_sum]
+  apply sum_congr rfl
+  intro j hj
+  rw [((h.coprime_dvd_left (Nat.dvd_of_mem_divisors hi)).coprime_dvd_right
+    (Nat.dvd_of_mem_divisors hj)).card_divisors_mul]
+  ring
+
+private theorem a_pos {x : ℕ} (hx : 1 < x) : 0 < a x := by
+  have h := Finset.single_le_sum (f := fun d : ℕ => d*d.divisors.card)
+    (fun _ _ => Nat.zero_le _) (Nat.one_mem_properDivisors_iff_one_lt.mpr hx)
+  change 1 ≤ _
+  simpa [a] using h
+
+private theorem card_pos {x : ℕ} (hx : 0 < x) : 0 < x.divisors.card :=
+  Finset.card_pos.mpr ⟨1, Nat.one_mem_divisors.mpr hx.ne'⟩
+
+private theorem card_two {x : ℕ} (hx : 1 < x) : 2 ≤ x.divisors.card := by
+  have h := card_pos (by omega : 0 < x)
+  have h' : x.divisors.card ≠ 1 := fun e => (by omega : x ≠ 1) ((Nat.divisors_card_eq_one_iff x).mp e)
+  omega
+
+private theorem card_pow {p : ℕ} (hp : p.Prime) (e : ℕ) :
+    (p^e).divisors.card = e+1 := by simp [Nat.divisors_prime_pow hp]
+
+private theorem cofactor_budget {p m : ℕ} (hp : 1 < p) (hm : 1 < m)
+    (hfix : a (p*m) = p*m) : m.divisors.card < p := by
+  let f := fun d : ℕ => d * d.divisors.card
+  have hlt : m < p*m := by nlinarith
+  have hm' : m ∈ (p*m).properDivisors :=
+    Nat.mem_properDivisors.mpr ⟨dvd_mul_left _ _, hlt⟩
+  have h1 : 1 ∈ (p*m).properDivisors := Nat.one_mem_properDivisors_iff_one_lt.mpr (by omega)
+  have h1' : 1 ∈ (p*m).properDivisors.erase m :=
+    mem_erase.mpr ⟨by omega, h1⟩
+  have hs := single_le_sum (f := f) (fun _ _ => Nat.zero_le _) h1'
+  have ht := sum_erase_add (p*m).properDivisors f hm'
+  change (∑ d ∈ (p*m).properDivisors, f d) = p*m at hfix
+  rw [hfix] at ht
+  have hf : f 1 = 1 := by simp [f]
+  rw [hf] at hs
+  change _ + m * m.divisors.card = p*m at ht
+  have hstrict : m * m.divisors.card < p*m := by omega
+  rw [Nat.mul_comm p m] at hstrict
+  exact (Nat.mul_lt_mul_left (by omega : 0 < m)).mp hstrict
+
+/-- Every prime divisor gives an upper bound for the total divisor count. -/
+theorem divisor_count_bound {n p : ℕ} (hn : 0 < n) (hp : p.Prime)
+    (hd : p ∣ n) (hfix : a n = n) : n.divisors.card ≤ 2*(p-1) := by
+  obtain ⟨k, hk⟩ := Nat.exists_eq_succ_of_ne_zero (hp.factorization_pos_of_dvd hn.ne' hd).ne'
+  let b := ordCompl[p] n
+  have hbp : 0 < b := Nat.ordCompl_pos p hn.ne'
+  have hc : p.Coprime b := Nat.coprime_ordCompl hp hn.ne'
+  have he : p^(k+1) * b = n := by
+    exact (congrArg (fun j => p^j*b) hk.symm).trans (Nat.ordProj_mul_ordCompl_eq_self n p)
+  have he' : p * (p^k*b) = n := by rw [← he, pow_succ']; ac_rfl
+  have hpos : 0 < p^k*b := Nat.mul_pos (pow_pos hp.pos _) hbp
+  have hgt : 1 < p^k*b := by
+    by_contra! h
+    have hm : p^k*b = 1 := by omega
+    rw [hm, mul_one] at he'
+    have hprime : a p = 1 := by simp [a, hp.properDivisors]
+    have := hp.one_lt
+    rw [← he', hprime] at hfix
+    omega
+  have hb := cofactor_budget hp.one_lt hgt (by simpa only [he'] using hfix)
+  rw [(hc.pow_left k).card_divisors_mul, card_pow hp] at hb
+  rw [← he, (hc.pow_left (k+1)).card_divisors_mul, card_pow hp]
+  have hp1 := hp.one_lt
+  have hh : (k+1+1)*b.divisors.card ≤ 2*((k+1)*b.divisors.card) := by
+    nlinarith only [Nat.zero_le (k*b.divisors.card)]
+  omega
+
+private theorem cut_balance {x y : ℕ} (hx : 0 < x) (hy : 0 < y)
+    (hc : x.Coprime y) (hf : a (x*y) = x*y) :
+    (∑ d ∈ x.divisors, d * d.divisors.card) * a y + y * y.divisors.card * a x = x*y := by
+  have h := moment_mul hc
+  rw [moment_eq (Nat.mul_pos hx hy).ne', hf, hc.card_divisors_mul, moment_eq hy.ne'] at h
+  rw [moment_eq hx.ne'] at h ⊢
+  nlinarith only [h]
+
+private theorem cut_small {x y : ℕ} (hx : 1 < x) (hy : 1 < y)
+    (hc : x.Coprime y) (hf : a (x*y) = x*y) : x.divisors.card * a y < y := by
+  have he := cut_balance (by omega : 0 < x) (by omega : 0 < y) hc hf
+  rw [moment_eq (by omega : x ≠ 0)] at he
+  have hapos := Nat.mul_pos (a_pos hx) (a_pos hy)
+  have hlt : x * (x.divisors.card * a y) < x*y := by
+    nlinarith only [he, hapos, Nat.zero_le (y*y.divisors.card*a x)]
+  exact (Nat.mul_lt_mul_left (by omega : 0 < x)).mp hlt
+
+/-- Every nontrivial coprime cut forces a common divisor larger than the
+divisor count on the first side of the cut. -/
+theorem cut_gcd {x y : ℕ} (hx : 1 < x) (hy : 1 < y)
+    (hc : x.Coprime y) (hf : a (x*y) = x*y) :
+    x.divisors.card < Nat.gcd y ((∑ d ∈ x.divisors, d * d.divisors.card)) := by
+  have h := cut_balance (by omega : 0 < x) (by omega : 0 < y) hc hf
+  have hd : y ∣ (∑ d ∈ x.divisors, d * d.divisors.card) * a y := by
+    apply (Nat.dvd_add_iff_left (show y ∣ y*y.divisors.card*a x from by
+      rw [Nat.mul_assoc]; exact dvd_mul_right _ _)).mpr
+    rw [h]
+    exact dvd_mul_left _ _
+  have hgd : y ∣ Nat.gcd y ((∑ d ∈ x.divisors, d * d.divisors.card)) * a y := dvd_gcd_mul_of_dvd_mul hd
+  have huv := cut_small hx hy hc hf
+  have hle := Nat.le_of_dvd (Nat.mul_pos (Nat.gcd_pos_of_pos_left _ (by omega : 0 < y)) (a_pos hy)) hgd
+  by_contra! hg
+  have ha := Nat.mul_le_mul_right (a y) hg
+  omega
+
+private theorem prime_moment {p : ℕ} (hp : p.Prime) : (∑ d ∈ p.divisors, d * d.divisors.card) = 2*p+1 := by
+  simp [hp.divisors, Ne.symm hp.ne_one, mul_comm, add_comm]
+
+/-- If the least prime occurs exactly once, its first Cunningham successor
+must itself be a prime divisor of the complementary factor. -/
+theorem first_successor {p m : ℕ} (hp : p.Prime) (hm : 1 < m) (hc : p.Coprime m)
+    (hmin : ∀ q : ℕ, q.Prime → q ∣ m → p ≤ q) (hf : a (p*m) = p*m) :
+    (2*p+1).Prime ∧ (2*p+1) ∣ m := by
+  have hg := cut_gcd hp.one_lt hm hc hf
+  have hcard := card_pos hp.pos
+  obtain ⟨q,hq,hqd⟩ := Nat.exists_prime_and_dvd (show Nat.gcd m ((∑ d ∈ p.divisors, d * d.divisors.card)) ≠ 1 by omega)
+  have hqm := hqd.trans (Nat.gcd_dvd_left _ _)
+  have hqt := hqd.trans (Nat.gcd_dvd_right _ _)
+  rw [prime_moment hp] at hqt
+  have hl := hmin q hq hqm
+  have hn : p ≠ q := fun e => (hp.coprime_iff_not_dvd.mp hc) (e ▸ hqm)
+  obtain ⟨k,hk⟩ := hqt
+  have hk0 : k ≠ 0 := by rintro rfl; simp at hk
+  have hk1 : k = 1 := by
+    by_contra h
+    have hh := Nat.mul_le_mul_left q (show 2 ≤ k by omega)
+    omega
+  rw [hk1, mul_one] at hk
+  exact hk.symm ▸ ⟨hq,hqm⟩
+
+/-- If twice the least prime plus one is composite, that least prime is
+repeated in the input. -/
+theorem least_prime_square {n : ℕ} (hn : 1 < n) (hf : a n = n)
+    (hbad : ¬ (2*n.minFac+1).Prime) : n.minFac^2 ∣ n := by
+  let p := n.minFac
+  let m := n / p
+  have hp : p.Prime := Nat.minFac_prime (by omega)
+  have hpn : p ∣ n := Nat.minFac_dvd n
+  have he : p*m = n := Nat.mul_div_cancel' hpn
+  by_contra h
+  have hc : p.Coprime m := hp.coprime_iff_not_dvd.mpr (fun d =>
+    h (show p^2 ∣ n by rw [← he, pow_two]; exact Nat.mul_dvd_mul_left p d))
+  have hm0 : m ≠ 0 := by rintro hm; rw [hm, mul_zero] at he; omega
+  have hm : 1 < m := by
+    apply lt_of_not_ge
+    intro hb
+    have hm1 : m = 1 := Nat.le_antisymm hb (Nat.pos_of_ne_zero hm0)
+    rw [hm1,mul_one] at he
+    have ha : a p = 1 := by simp [a, hp.properDivisors]
+    rw [← he,ha] at hf
+    have := hp.one_lt
+    omega
+  have hh := first_successor hp hm hc (fun q hq hd =>
+    Nat.minFac_le_of_dvd hq.two_le (hd.trans (show m ∣ n by rw [← he]; exact dvd_mul_left _ _)))
+    (by simpa only [he] using hf)
+  exact hbad hh.1
+
+theorem least_prime_one_mod_three {n : ℕ} (hn : 1 < n) (hf : a n = n)
+    (hmod : n.minFac % 3 = 1) : n.minFac^2 ∣ n := by
+  apply least_prime_square hn hf
+  intro hh
+  have hp := Nat.minFac_prime (show n ≠ 1 by omega)
+  have h3 : 3 ∣ 2*n.minFac+1 := by omega
+  have eq := (Nat.prime_dvd_prime_iff_eq Nat.prime_three hh).mp h3
+  have htwo := hp.two_le
+  omega
+
+private theorem crossing {x y p : ℕ} (hx : 1 < x) (hy : 1 < y)
+    (hc : x.Coprime y) (hf : a (x*y) = x*y)
+    (hb : (x*y).divisors.card ≤ 2*(p-1)) :
+    ∃ q : ℕ, q.Prime ∧ q ∣ y ∧ q < x*p := by
+  have h := cut_gcd hx hy hc hf
+  have hpos := card_pos (by omega : 0 < x)
+  have hg : Nat.gcd y ((∑ d ∈ x.divisors, d * d.divisors.card)) ≠ 1 := by omega
+  obtain ⟨q,hq,hqd⟩ := Nat.exists_prime_and_dvd hg
+  have hqx := hqd.trans (Nat.gcd_dvd_right _ _)
+  have hqy := hqd.trans (Nat.gcd_dvd_left _ _)
+  have hy2 := card_two hy
+  rw [hc.card_divisors_mul] at hb
+  have hmul := Nat.mul_le_mul_left x.divisors.card hy2
+  have hxcp : x.divisors.card + 1 ≤ p := by
+    have hlarge : 0 < x.divisors.card * 2 := by omega
+    omega
+  have hs := cut_small hy hx hc.symm (by simpa [Nat.mul_comm] using hf)
+  have hax : a x < x := by
+    have hle : a x ≤ y.divisors.card * a x := by
+      simpa using Nat.mul_le_mul_right (a x) (show 1 ≤ y.divisors.card by omega)
+    omega
+  rw [moment_eq (by omega : x ≠ 0)] at hqx
+  have hqle := Nat.le_of_dvd (Nat.add_pos_left (a_pos hx) _) hqx
+  refine ⟨q,hq,hqy,?_⟩
+  have hxp := Nat.mul_le_mul_left x hxcp
+  nlinarith only [hax, hqle, hxp]
+
+private theorem grow {n p : ℕ} (hf : a n = n)
+    (hb : n.divisors.card ≤ 2*(p-1)) (m : ℕ) :
+    ∀ A : ℕ, 1 < A → 0 < m → A.Coprime m → A*m = n →
+      A*p ≤ p^A.divisors.card → n*p ≤ p^n.divisors.card := by
+  induction m using Nat.strong_induction_on with
+  | h m ih =>
+    intro A hA hm hc he hAheight
+    by_cases hm1 : m = 1
+    · subst m
+      rw [mul_one] at he
+      simpa only [← he] using hAheight
+    have hms : 1 < m := by omega
+    obtain ⟨q, hq, hqm, hql⟩ := crossing hA hms hc (he ▸ hf) (he ▸ hb)
+    let e := m.factorization q
+    let b := ordCompl[q] m
+    have hbp : 0 < b := Nat.ordCompl_pos q hm.ne'
+    have hqpos : 0 < e := hq.factorization_pos_of_dvd hm.ne' hqm
+    have hsplit : q^e*b = m := Nat.ordProj_mul_ordCompl_eq_self _ _
+    have hqc : (q^e).Coprime b := (Nat.coprime_ordCompl hq hm.ne').pow_left _
+    have hbc : A.Coprime b := hc.coprime_dvd_right (Nat.ordCompl_dvd m q)
+    have hAc : A.Coprime (q^e) := hc.coprime_dvd_right (Nat.ordProj_dvd m q)
+    have ht : 1 < q^e := Nat.one_lt_pow hqpos.ne' hq.one_lt
+    have hbm : b < m := by rw [← hsplit]; nlinarith only [ht, hbp]
+    apply ih b hbm (A*q^e) (by nlinarith only [hA,ht]) hbp
+      (Nat.coprime_mul_iff_left.mpr ⟨hbc,hqc⟩) (by rwa [mul_assoc,hsplit])
+    rw [hAc.card_divisors_mul, card_pow hq]
+    have hpq : q ≤ p^A.divisors.card := hql.le.trans hAheight
+    calc
+      A*q^e*p = (A*p)*q^e := by ac_rfl
+      _ ≤ p^A.divisors.card * (p^A.divisors.card)^e :=
+        Nat.mul_le_mul hAheight (Nat.pow_le_pow_left hpq e)
+      _ = p^(A.divisors.card*(e+1)) := by rw [pow_mul, pow_succ']
+
+/-- The whole fixed point is bounded in terms of any one prime divisor and
+the total divisor count. -/
+theorem height {n p : ℕ} (hn : 0 < n) (hp : p.Prime) (hd : p ∣ n)
+    (hf : a n = n) : n ≤ p^(n.divisors.card-1) := by
+  let e := n.factorization p
+  let b := ordCompl[p] n
+  have hpos : 0 < e := hp.factorization_pos_of_dvd hn.ne' hd
+  have hb := divisor_count_bound hn hp hd hf
+  have hg := grow hf hb b (p^e) (Nat.one_lt_pow hpos.ne' hp.one_lt)
+    (Nat.ordCompl_pos p hn.ne') ((Nat.coprime_ordCompl hp hn.ne').pow_left e)
+    (Nat.ordProj_mul_ordCompl_eq_self n p) (by rw [card_pow hp, pow_succ])
+  have hc := card_pos hn
+  have hD : n.divisors.card = (n.divisors.card-1)+1 := by omega
+  conv_rhs at hg => rw [hD, pow_succ]
+  exact Nat.le_of_mul_le_mul_right hg hp.pos
+
+/-- Uniform effective height for a fixed point having a prime divisor at
+most the given cutoff, with no hypothesis on the other prime factors. -/
+theorem height_of_small_prime {n p P : ℕ} (hn : 0 < n) (hp : p.Prime)
+    (hd : p ∣ n) (hle : p ≤ P) (hf : a n = n) : n ≤ P^(2*P-3) := by
+  have h := height hn hp hd hf
+  have hb := divisor_count_bound hn hp hd hf
+  have hpp := hp.two_le
+  exact h.trans ((Nat.pow_le_pow_left hle _).trans
+    (Nat.pow_le_pow_right (by omega : 0 < P) (by omega)))
+
+/-- A divisor-count cutoff also gives a height bound without specifying any prime. -/
+theorem height_of_divisor_count {n : ℕ} (hn : 1 < n) (hf : a n = n) :
+    n ≤ (n.divisors.card^2)^(n.divisors.card-1) := by
+  let p := n.minFac
+  have hpos : 0 < n := by omega
+  have hp : p.Prime := Nat.minFac_prime (by omega)
+  have hsum : p * a n ≤ (n.divisors.card*n.divisors.card)*n := by
+    unfold a
+    rw [mul_sum]
+    calc
+      (∑ d ∈ n.properDivisors, p*(d*d.divisors.card)) ≤
+          ∑ _d ∈ n.properDivisors, n*n.divisors.card := by
+        apply sum_le_sum
+        intro d hd
+        obtain ⟨k,hk,he⟩ := (Nat.mem_properDivisors_iff_exists hpos.ne').mp hd
+        have hkdiv : k ∣ n := ⟨d, by simpa [mul_comm] using he⟩
+        have hpk : p ≤ k := Nat.minFac_le_of_dvd hk hkdiv
+        have hpd : p*d ≤ n := by rw [he, Nat.mul_comm d k]; exact Nat.mul_le_mul_right d hpk
+        have hdc := Finset.card_le_card (Nat.divisors_subset_of_dvd hpos.ne' (Nat.mem_properDivisors.mp hd).1)
+        rw [← mul_assoc]
+        exact Nat.mul_le_mul hpd hdc
+      _ ≤ (n.divisors.card*n.divisors.card)*n := by
+        rw [sum_const, nsmul_eq_mul]
+        have hc := Finset.card_le_card (Nat.properDivisors_subset_divisors (n := n))
+        calc
+          _ ≤ n.divisors.card*(n*n.divisors.card) := Nat.mul_le_mul_right _ hc
+          _ = _ := by ac_rfl
+  rw [hf] at hsum
+  have hpD : p ≤ n.divisors.card^2 := by
+    rw [pow_two]
+    exact Nat.le_of_mul_le_mul_right hsum hpos
+  exact (height hpos hp (Nat.minFac_dvd n) hf).trans (Nat.pow_le_pow_left hpD _)
+
+private theorem pow_step {p : ℕ} (hp : p.Prime) (k : ℕ) :
+    a (p^(k+1)) = a (p^k) + p^k*(k+1) := by
+  simp only [a, Nat.properDivisors_prime_pow hp, sum_map, Function.Embedding.coeFn_mk, card_pow hp, sum_range_succ]
+
+private theorem pow_one_mod {p : ℕ} (hp : p.Prime) (k : ℕ) :
+    a (p^(k+1)) % p = 1 := by
+  induction k with
+  | zero => simp [a, hp.properDivisors, Nat.mod_eq_of_lt hp.one_lt]
+  | succ k ih =>
+    rw [pow_step hp, Nat.add_mod]
+    have hd : p ∣ p^(k+1)*(k+1+1) := (dvd_pow_self p (by omega : k+1 ≠ 0)).trans (dvd_mul_right _ _)
+    simp only [Nat.mod_eq_zero_of_dvd hd, Nat.add_zero, ih, Nat.mod_eq_of_lt hp.one_lt]
+
+private theorem gap_lift {p : ℕ} (hp : p.Prime) (k C t : ℕ)
+    (hC : 2*a (p^k)+C ≤ p^k) (hs : 2*(k+1)+1+t ≤ p) :
+    2*a (p^(k+1))+C+t*p^k ≤ p^(k+1) := by
+  rw [pow_step hp, pow_succ]
+  nlinarith only [hC, Nat.mul_le_mul_right (p^k) hs]
+
+private theorem gap_one {p : ℕ} (hp : p.Prime) (e : ℕ) (hb : 2*e+1 ≤ p) :
+    2*a (p^e)+1 ≤ p^e := by
+  induction e with
+  | zero => simp [a]
+  | succ k ih =>
+    simpa using gap_lift hp k 1 0 (ih (by omega)) (by omega)
+
+private theorem pq_budget {p q : ℕ} (hp : p.Prime) (hq : q.Prime) (hpq : p ≠ q)
+    (k : ℕ) (hf : a (p^(k+1)*q) = p^(k+1)*q) : 2*(k+1) < p := by
+  have hc := (Nat.coprime_primes hp hq).mpr hpq
+  have hpos := pow_pos hp.pos k
+  have hq1 := hq.one_lt
+  have hh : p*(p^k*q) = p^(k+1)*q := by rw [pow_succ']; ac_rfl
+  have h := cofactor_budget hp.one_lt (show 1 < p^k*q by nlinarith)
+    (show a (p*(p^k*q)) = p*(p^k*q) by simpa only [hh] using hf)
+  have hq2 : q.divisors.card = 2 := by simp [hq.divisors, Ne.symm hq.ne_one]
+  rw [(hc.pow_left k).card_divisors_mul, card_pow hp, hq2, mul_comm] at h
+  exact h
+
+/-- The gap between the leading power and twice its proper moment divides 2e+3. -/
+private theorem pq_gap {p q : ℕ} (hp : p.Prime) (hq : q.Prime) (hpq : p ≠ q)
+    (k : ℕ) (hf : a (p^(k+1)*q) = p^(k+1)*q) :
+    p^(k+1)-2*a (p^(k+1)) ∣ 2*(k+1)+3 := by
+  let e := k+1
+  let P := p^e
+  let A := a P
+  let T := A+P*(e+1)
+  let g := P-2*A
+  have hpos : 0 < P := pow_pos hp.pos _
+  have hbudget := pq_budget hp hq hpq k hf
+  have hgap : 2*A+1 ≤ P := gap_one hp e (by dsimp [e]; omega)
+  have hg : g + 2*A = P := Nat.sub_add_cancel (by omega)
+  have hc := ((Nat.coprime_primes hp hq).mpr hpq).pow_left e
+  have he := cut_balance hpos hq.pos hc hf
+  rw [moment_eq hpos.ne', card_pow hp] at he
+  have haq : a q = 1 := by simp [a, hq.properDivisors]
+  have htq : q.divisors.card = 2 := by simp [hq.divisors, Ne.symm hq.ne_one]
+  rw [haq, htq, mul_one] at he
+  have hbal : T + q*2*A = P*q := he
+  have hqg : q*g = T := by nlinarith only [hbal, congrArg (q*·) hg]
+  have hmul : (2*q+1)*g = (2*e+3)*P := by
+    dsimp only [T] at hqg
+    nlinarith only [hqg,hg]
+  have hmult : P ∣ T*(2*q+1) := by
+    refine ⟨q*(2*e+3), ?_⟩
+    calc
+      T*(2*q+1) = q*((2*q+1)*g) := by rw [← hqg]; ring
+      _ = P*(q*(2*e+3)) := by rw [hmul]; ring
+  have hpP : p ∣ P := dvd_pow_self p (by simp [e])
+  have hpT : p.Coprime T := by
+    apply hp.coprime_iff_not_dvd.mpr
+    intro hd
+    have hdA : p ∣ A := (Nat.dvd_add_iff_left (hpP.trans (dvd_mul_right P (e+1)))).mpr hd
+    have hmA : A % p = 1 := pow_one_mod hp k
+    rw [Nat.mod_eq_zero_of_dvd hdA] at hmA
+    omega
+  have hdiv : P ∣ 2*q+1 := (hpT.pow_left e).dvd_of_dvd_mul_left hmult
+  obtain ⟨w,hw⟩ := hdiv
+  refine ⟨w, ?_⟩
+  change 2*e+3 = g*w
+  apply Nat.eq_of_mul_eq_mul_left hpos
+  calc
+    P*(2*e+3) = (2*q+1)*g := by simpa only [Nat.mul_comm P] using hmul.symm
+    _ = P*(g*w) := by rw [hw]; ring
+
+/-- On every support with two distinct primes and one exponent equal to one,
+21 is the only fixed point. Both primes and the other exponent are unrestricted. -/
+theorem prime_power_times_prime {p q e : ℕ} (hp : p.Prime) (hq : q.Prime)
+    (hpq : p ≠ q) (he : 0 < e) (hf : a (p^e*q) = p^e*q) : p^e*q = 21 := by
+  obtain ⟨k,rfl⟩ := Nat.exists_eq_succ_of_ne_zero he.ne'
+  have hb := pq_budget hp hq hpq k hf
+  have hd := pq_gap hp hq hpq k hf
+  have hu := Nat.le_of_dvd (show 0 < 2*(k+1)+3 by omega) hd
+  cases k with
+  | zero =>
+    have hap : a p = 1 := by simp [a, hp.properDivisors]
+    have haq : a q = 1 := by simp [a, hq.properDivisors]
+    have hq2 : q.divisors.card = 2 := by simp [hq.divisors, Ne.symm hq.ne_one]
+    simp only [zero_add, pow_one] at hf hd ⊢
+    rw [hap] at hd
+    have h5 : p-2 = 1 ∨ p-2 = 5 := (Nat.dvd_prime (by decide : Nat.Prime 5)).mp hd
+    have h := cut_balance hp.pos hq.pos ((Nat.coprime_primes hp hq).mpr hpq) hf
+    rw [prime_moment hp, hap, haq, hq2] at h
+    rcases (show p = 3 ∨ p = 7 by omega) with rfl | rfl <;> omega
+  | succ k =>
+    cases k with
+    | zero =>
+      have hap : a p = 1 := by simp [a, hp.properDivisors]
+      have hap2 : a (p^2) = 1+2*p := by
+        simpa only [pow_one, hap, Nat.mul_comm p 2] using pow_step hp 1
+      change p^2-2*a (p^2) ≤ 7 at hu
+      change p^2-2*a (p^2) ∣ 7 at hd
+      rw [hap2] at hu hd
+      have hle : p*p ≤ 7+2*(1+2*p) := by rw [← pow_two]; omega
+      have hple : p ≤ 5 := by
+        by_contra! h
+        nlinarith only [hle, Nat.mul_le_mul_right p (show 6 ≤ p by omega), h]
+      have hp5 : p = 5 := by omega
+      subst p
+      norm_num at hd
+    | succ k =>
+      have hb' : 2*(k+3)+1 ≤ p := by omega
+      have h0 := gap_one hp (k+1) (by omega)
+      have h1 := gap_lift hp (k+1) 1 2 h0 (by omega)
+      have h2 := gap_lift hp (k+2) (1+2*p^(k+1)) 0 (by simpa only [Nat.add_assoc] using h1) (by omega)
+      have hl : p ≤ p^(k+1) := by
+        calc
+          p = p^1 := by simp
+          _ ≤ p^(k+1) := Nat.pow_le_pow_right hp.pos (by omega)
+      simp only [zero_mul, add_zero] at h2
+      change 2*a (p^(k+3))+(1+2*p^(k+1)) ≤ p^(k+3) at h2
+      change p^(k+3)-2*a (p^(k+3)) ≤ 2*(k+3)+3 at hu
+      omega
+
+/-- The published least-prime computations address these finite ranges. -/
+def H1 : Prop := ∀ n : ℕ, 1 < n → n.minFac ≤ 433 →
+  n ≤ n.minFac^(2*n.minFac-3) → (n.minFac % 3 = 1 → n.minFac^2 ∣ n) →
+  (¬ ∃ p q e : ℕ, p.Prime ∧ q.Prime ∧ p ≠ q ∧ 0 < e ∧ n = p^e*q) →
+  a n = n → n = 21
+
+/-- The remaining least primes each have a finite height bound. Every
+nontrivial coprime cut must also pass the strict gcd inequality. -/
+def H2 : Prop := ∀ n : ℕ, 1 < n → 433 < n.minFac →
+  n.divisors.card ≤ 2*(n.minFac-1) → n ≤ n.minFac^(n.divisors.card-1) →
+  (∀ x y : ℕ, 1 < x → 1 < y → x.Coprime y → x*y = n →
+    x.divisors.card < Nat.gcd y (∑ d ∈ x.divisors, d * d.divisors.card)) →
+  (¬ ∃ p q e : ℕ, p.Prime ∧ q.Prime ∧ p ≠ q ∧ 0 < e ∧ n = p^e*q) →
+  a n ≠ n
+
+theorem main : H1 → H2 → type_of% @OeisA245211.conjecture := by
+  intro h1 h2 n hn
+  constructor
+  · intro hf
+    have hgt : 1 < n := by
+      by_contra! hle
+      have hn1 : n = 1 := by omega
+      subst n
+      have hzero : a 1 = 0 := by decide
+      omega
+    have hp := Nat.minFac_prime (show n ≠ 1 by omega)
+    have hd := Nat.minFac_dvd n
+    by_cases hs : ∃ p q e : ℕ, p.Prime ∧ q.Prime ∧ p ≠ q ∧ 0 < e ∧ n = p^e*q
+    · obtain ⟨p,q,e,hp',hq,hpq,he,rfl⟩ := hs
+      exact prime_power_times_prime hp' hq hpq he hf
+    by_cases hlo : n.minFac ≤ 433
+    · exact h1 n hgt hlo (height_of_small_prime hn hp hd le_rfl hf)
+        (least_prime_one_mod_three hgt hf) hs hf
+    · exact (h2 n hgt (by omega) (divisor_count_bound hn hp hd hf) (height hn hp hd hf)
+        (fun _ _ hx hy hc he => cut_gcd hx hy hc (by simpa only [he] using hf)) hs hf).elim
+  · rintro rfl
+    decide
+
+end OMA.R_OeisA245211_conjecture_R3
