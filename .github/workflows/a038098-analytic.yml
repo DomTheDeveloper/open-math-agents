@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           repository: DomTheDeveloper/formal-conjectures
-          ref: e0154993b07c556d8bdd81420e211dc43750a1dd
+          ref: 7dcc7a27fa33559df19bc07f8fbf76ea879ca7ef
           persist-credentials: false
       - name: Install pinned Lean toolchain
         run: |
