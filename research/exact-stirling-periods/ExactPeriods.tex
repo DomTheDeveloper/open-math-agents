@@ -1,0 +1,144 @@
+\documentclass[11pt,letterpaper]{article}
+\usepackage[margin=.83in,top=.72in,bottom=.75in]{geometry}
+\usepackage{amsmath,amssymb,booktabs,array,xcolor,fancyhdr,microtype,hyperref}
+\definecolor{ink}{HTML}{122843}\definecolor{accent}{HTML}{176865}
+\hypersetup{colorlinks=true,urlcolor=accent,linkcolor=accent,pdftitle={Exact periods of two central-binomial Stirling transforms}}
+\pagestyle{fancy}\fancyhf{}\renewcommand{\headrulewidth}{0pt}
+\fancyfoot[L]{\footnotesize\color{accent}Exact modular periods of A354242 and A354253}\fancyfoot[R]{\footnotesize\color{accent}\thepage}
+\setlength{\parindent}{0pt}\setlength{\parskip}{5pt}\setlength{\footskip}{24pt}
+\newcommand{\head}[1]{\vspace{6pt}{\large\sffamily\bfseries\color{ink}#1}\par}
+\newcommand{\overlinehead}[1]{{\footnotesize\sffamily\bfseries\color{accent}#1}\par}
+\newcommand{\Fp}{\mathbb F_p}\newcommand{\Z}{\mathbb Z}\newcommand{\lcm}{\operatorname{lcm}}
+\newcommand{\oeis}[1]{\href{https://oeis.org/#1}{#1}}
+\begin{document}
+\overlinehead{NUMBER THEORY \quad / \quad RESEARCH NOTE \hfill 26 NOVEMBER 2026}
+\vspace{4pt}{\fontsize{24.88}{28}\selectfont\sffamily\bfseries\color{ink}Exact periods of two central-binomial\\ Stirling transforms}\par
+For $b=1,2$ define the integer sequence $a_b(n)$ by its exponential generating function
+\[
+ \sum_{n\ge0} a_b(n)\frac{x^n}{n!}=(1-4b(e^x-1))^{-1/2}.
+\]
+These are \oeis{A354242} and \oeis{A354253}, respectively. Peter Bala conjectured that the least eventual period modulo $m$ divides Euler's totient $\varphi(m)$. An earlier proof treats the whole class $G(e^x-1)$ with integral $G$ and gives $\varphi(m)$ as a period from $n\ge m$ [3]. We determine the least eventual period of each of these two particular sequences for every positive modulus.
+
+\head{The exact answer}
+Let $T_b(m)$ be the least positive $T$ such that $a_b(n+T)\equiv a_b(n)\pmod m$ for every sufficiently large $n$. For $e\ge1$ the prime-power answers are
+\begin{center}\renewcommand{\arraystretch}{1.33}
+\begin{tabular}{@{}lll@{}}\toprule
+\textbf{Modulus} & \textbf{$T_1$, A354242}& \textbf{$T_2$, A354253}\\\midrule
+$p^e$, prime $p\ge5$ & $(p-1)p^{e-1}$ & $(p-1)p^{e-1}$\\
+$3^e$ & $1$ if $e=1$ & $3^{e-1}$ if $e\le5$\\
+ & $2\cdot3^{e-1}$ if $e\ge2$ & $2\cdot3^{e-1}$ if $e\ge6$\\
+$2^e$ & $1$ if $e\le3$ & $1$ if $e\le6$\\
+ & $2^{\max(1,e-5)}$ if $e\ge4$ & $2^{\max(1,e-7)}$ if $e\ge7$\\\bottomrule
+\end{tabular}\end{center}
+For $m>1$, take the least common multiple over its exact prime-power factors. Set $T_b(1)=1$. This follows from the Chinese remainder theorem, since a shift works eventually modulo $m$ exactly when it works eventually at every factor. The eventual shifts at a fixed modulus are precisely the multiples of its least eventual period, by division with remainder on a repeating tail.
+
+\head{Two examples}
+Modulo $243=3^5$, the two periods are $162$ and $81$. At the very next power, $729$, both periods are $486$. Modulo $1024=2^{10}$ they are $32$ and $8$. The distinction already appears modulo $64$, where the first sequence eventually alternates between two residues and the second becomes constant.
+
+\newpage
+\overlinehead{PROOF \quad / \quad REDUCTION TO FINITE SUMS}
+\head{A finite sum of integer powers at every modulus}
+Write $g_k=b^k\binom{2k}{k}$. Expanding the generating function in powers of $e^x-1$ gives
+\[
+ a_b(n)=\sum_{k=0}^n g_k\,k!\,\genfrac{\{}{\}}{0pt}{}{n}{k},\qquad
+ k!\,\genfrac{\{}{\}}{0pt}{}{n}{k}=\sum_{j=0}^k(-1)^{k-j}\binom{k}{j}j^n.
+\]
+Here $\genfrac{\{}{\}}{0pt}{}{n}{k}$ is a Stirling number of the second kind, and $0^0=1$. The second identity is inclusion--exclusion for onto maps and holds also for $k>n$, when both sides vanish. For a modulus $m>1$, take any $K$ with $m\mid K!$. Define integer weights by
+\[
+ P_K(y)=\sum_{k=0}^{K-1}g_k(y-1)^k=\sum_{j=0}^{K-1}c_jy^j.
+ \qquad a_b(n)\equiv\sum_{j=0}^{K-1}c_jj^n\pmod m. \tag{1}
+\]
+Every omitted Stirling term is a multiple of $m$. Modulo $p^e$, all bases divisible by $p$ vanish once $n\ge e$. The remaining bases are units, so the Carmichael exponent $\lambda(p^e)$ is a period on that tail. A value contradicting a proposed shift anywhere on this tail recurs arbitrarily late.
+
+\head{The nonzero bases that control the period modulo $p$}
+For odd $p$ write $h=(p-1)/2$ and $H(y)=(1+4b-4by)^h=\sum_{r=0}^h w_r y^r$ in $\Fp[y]$. Choose $K\ge p^2$ in (1), increasing it further if the modulus requires it. In $\Fp[y]$ one has
+\[
+ P_K(y)\equiv H(y)\pmod{y^p-1},\qquad
+ P_K(y)\equiv H(y)H(y^p)\pmod{y^{p^2}-1}. \tag{2}
+\]
+Indeed in $\Fp[[t]]/(t^q)$, for $q=p,p^2$, $(1-4bt)^{(q-1)/2}$ and $(1-4bt)^{-1/2}$ have the same square and constant coefficient $1$, since $(1-4bt)^q=1$ there. Their sum is a unit, so they agree. Substitute $t=y-1$ and use $(y-1)^q=y^q-1$. For $q=p^2$ the exponent is $h(1+p)$, which gives the factorization in (2).
+
+For $n\ge1$ the reduction modulo $p$ is $\sum_{r=1}^h w_r r^n$. Distinct nonzero bases give linearly independent sequences on every tail. Evaluating at consecutive exponents produces a Vandermonde matrix multiplied by an invertible diagonal matrix. A shift $d$ therefore works exactly when $r^d=1$ for every $r$ of nonzero weight. If $p\nmid b(1+4b)$ all the weights are nonzero. For $p\ge5$ the bases $1,\ldots,h$ generate $\Fp^\times$, since $2h=-1$ modulo $p$ and their negatives cover the other half. The least period is $p-1$. If $p\mid1+4b$, the polynomial is $y^h$. This gives period $4$ for $(b,p)=(1,5)$ and period $1$ for $(2,3)$. For $(1,3)$ the only nonzero base is also $1$.
+
+\head{Sharp universal bounds for the whole class}
+For any integral series $G$, put $a_G(n)=n![x^n]G(e^x-1)$. For $m>1$ let $E(m)$ be the largest exponent in the prime factorization of $m$, and let $\lambda(m)$ be the exponent of its unit group. For $n\ge0$ and $d>0$ we have the sharp equivalence
+\[
+ a_G(n+d)\equiv a_G(n)\pmod m\ \text{for every }G
+ \quad\Longleftrightarrow\quad n\ge E(m)\ \text{and}\ \lambda(m)\mid d.
+\]
+Formula (1) works with the coefficients of any $G$. For sufficiency, reduce at each $p^e\Vert m$. A nonunit base has zero $n$th power there, and every unit has $d$th power $1$. For necessity, $G(t)=(1+t)^j$ gives $a_G(n)=j^n$. Testing every unit $j$ forces $\lambda(m)\mid d$. Taking $j=p$ at a factor $p^{E(m)}\Vert m$ forces $n\ge E(m)$, since $p\nmid p^d-1$.
+
+\newpage
+\overlinehead{PROOF \quad / \quad ODD PRIME POWERS}
+\head{Why the full power of an odd prime occurs}
+Fix odd $p$ and $e\ge2$ and put $D=(p-1)p^{e-2}$. For $p\nmid j$ set $q_p(j)=(j^{p-1}-1)/p$. The binomial theorem yields
+\[
+ j^D\equiv 1+p^{e-1}q_p(j)\pmod {p^e}.
+\]
+Starting at $e=2$, raise the congruence to the $p$th power at each step. The intermediate binomial coefficients are multiples of $p$ and the last term vanishes to the required order because $p$ is odd. Also, for $1\le r<p$, expansion modulo $p^2$ gives
+\[
+ q_p(r+p\ell)\equiv q_p(r)-\ell/r\pmod p.
+\]
+For $n\ge e$ use (1) modulo $p^e$, divide $a_b(n+D)-a_b(n)$ by $p^{e-1}$ and reduce modulo $p$. Only unit bases contribute. In (2), the coefficient at $y^{r+p\ell}$ is the sum of the $c_j$ in that residue class modulo $p^2$, reduced modulo $p$. This coefficient is $w_rw_\ell$ (take $w_i=0$ for $i>h$). Because $\sum_\ell w_\ell=H(1)=1$ and $\sum_\ell\ell w_\ell=H'(1)=-4bh=2b$ in $\Fp$, we get the exact test
+\[
+ \frac{a_b(n+D)-a_b(n)}{p^{e-1}}
+ \equiv\sum_{r=1}^{h} w_r\big(q_p(r)-2b/r\big)r^n\pmod p. \tag{3}
+\]
+If $p\nmid b(1+4b)$ the coefficient of $1^n$ is $-2b w_1\ne0$. For $(b,p)=(1,5)$ the surviving base is $r=2$ and $q_5(2)-2b/r=3-1=2$ modulo $5$. For $(2,3)$ the surviving base is $r=1$ and $q_3(1)-2b=-4\ne0$ modulo $3$. Thus (3) is nonzero somewhere on every tail by the same Vandermonde argument. The least period divides $(p-1)p^{e-1}$ and cannot divide $D$. Its $p$-part is exactly $p^{e-1}$. For $p\ge5$ its reduction modulo $p$ also forces the factor $p-1$. This proves that entire row of the table.
+
+\head{When the factor 2 appears at the prime 3}
+For $b=1$, the residues $a_1(2)=5$ and $a_1(5)=2$ modulo 9 exclude shift $3$ on the periodic tail. The least period modulo 9 is $6$, so every higher period is even. For $b=2$, shift $81$ works modulo $243$ from $n=5$. It follows that the periods at $3^e$ for $e\le5$ are odd. Modulo $729$, $a_2(6)=226$ and $a_2(249)=712$ exclude shift $243$, so the period is even from $e=6$ on. Together with (3) this proves both ternary rows. Page 5 supplies the entire finite certificate for the positive assertion at $243$.
+
+\newpage
+\overlinehead{PROOF \quad / \quad POWERS OF TWO}
+\head{One doubling calculation controls arbitrarily large exponents}
+Put $\Delta_s(n)=a_b(n+2^s)-a_b(n)$. Let $v_b(s)$ be the largest $v$ for which $2^v\mid\Delta_s(n)$ eventually. We will show
+\[
+\begin{array}{c|cc}
+ &s=0&s\ge1\\ \hline
+ b=1 &3&s+5\\
+ b=2 &6&s+7
+\end{array} \tag{4}
+\]
+For $s\ge1$ write $c=5$ for $b=1$ and $c=7$ for $b=2$, and put $R=c-2$. The finite checks on page 5 establish (4) through $s=R$. For an odd integer $j$, define $L_s(j)=(j^{2^s}-1)/2^{s+2}$. These are integers for $s\ge1$, since $j^2\equiv1\pmod8$ and squaring gives
+\[
+ L_{s+1}(j)=L_s(j)+2^{s+1}L_s(j)^2.
+\]
+Consequently $L_s(j)\equiv L_R(j)\pmod{2^{c-1}}$ whenever $s\ge R$. Multiplying by $2^{s+2}$ gives
+\[
+ j^{2^s}-1\equiv 2^{s-R}(j^{2^R}-1)\pmod {2^{s+c+1}}. \tag{5}
+\]
+Use the \emph{same} weights from (1) modulo $2^{s+c+1}$ on both sides. For even $j$, $j^n$ already vanishes when $n\ge s+c+1$. For odd $j$, multiply (5) by $c_j j^n$ and sum. Hence
+\[
+ \Delta_s(n)\equiv 2^{s-R}\Delta_R(n)\pmod {2^{s+c+1}}\qquad(n\ge s+c+1).
+\]
+The anchor $\Delta_R$ is eventually divisible by $2^{R+c}$ and attains exactly this valuation arbitrarily late. The congruence gives the same two claims at valuation $s+c$ for $\Delta_s$. This proves (4) for every $s$.
+
+The least eventual period modulo $2^e$ is a power of two, because it divides $\lambda(2^e)$. By (4) it is precisely $2^s$ for the smallest nonnegative $s$ with $v_b(s)\ge e$. This yields the two dyadic formulas on page 1.
+
+\head{How a finite window proves an infinite tail}
+For any shift $d$, (1) writes the difference as a sum of $K$ terms $c_j(j^d-1)j^n$. It satisfies the monic linear recurrence with characteristic polynomial $\prod_{j=0}^{K-1}(X-j)$ over $\Z/m\Z$. Thus $K$ consecutive zeros imply zero at every later index. This use of a monic recurrence also works after reducing to a divisor of $m$. At a prime-power modulus, each nonzero window value at an index $n\ge e$ repeats arbitrarily late by the unit-base argument on page 2.
+
+\newpage
+\overlinehead{CERTIFICATES \quad / \quad REPRODUCIBILITY}
+\head{Thirteen small windows}
+For the dyadic checks take $m=2^{v+1}$, $N=v+1$ and $d=2^s$. In each row every difference from $n=N$ through $N+K-1$ is $0$ or $2^v$ modulo $m$. The last column supplies one index where it is $2^v$. Formula (1) with the given $K$ verifies the full window using integer arithmetic.
+\begin{center}\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{@{}rrrrr@{\hspace{.48in}}rrrrr@{}}\toprule
+$b$&$s$&$v$&$K$&Witness $n$&$b$&$s$&$v$&$K$&Witness $n$\\\midrule
+1&0&3&6&4&2&0&6&8&7\\ 1&1&6&8&7&2&1&8&12&9\\
+1&2&7&10&9&2&2&9&12&10\\ 1&3&8&12&9&2&3&10&14&11\\
+&&&&&2&4&11&16&12\\ &&&&&2&5&12&16&13\\\bottomrule\end{tabular}\end{center}
+For the three ternary checks, the parameters are $(b,m,N,d,K)$. The differences are reduced to $[0,m)$ and written in increasing index order.
+\begin{center}\renewcommand{\arraystretch}{1.13}
+\begin{tabular}{@{}ll@{}}\toprule Parameters & Complete difference window\\\midrule
+$(1,9,2,3,6)$ & $(6,3)$ repeated three times\\
+$(2,243,5,81,12)$ & twelve zeros\\
+$(2,729,6,243,15)$ & $(486,243)$ repeated seven times, followed by $486$\\\bottomrule\end{tabular}\end{center}
+\head{Independent checks}
+The Python verifier also generates the original coefficients from $(1+4b-4be^x)F'_b(x)=2be^xF_b(x)$. This recurrence agrees with the Stirling calculation through index $100$ for each sequence. Two full Carmichael periods were compared for every modulus $1$ to $512$, and also for $729$, $1000$ and $1024$, giving 1,030 independently measured periods. The proof covers every positive modulus.
+
+Lean checks all 13 finite windows, their propagation over commutative rings, the Vandermonde period criterion, and the integer lifting identities at odd primes and at $2$. The generating-function reductions (1)--(2), the derivation of (3) from the weights, and the assembly of the classification are proved in this note. The Python verifier also checks (3) in 888 cases. The \href{https://github.com/DomTheDeveloper/open-math-agents/tree/research/exact-stirling-periods/research/exact-stirling-periods}{source files and verification records} accompany the proof.
+
+{\small \textbf{Sources.} [1] OEIS Foundation, \oeis{A354242}, including Peter Bala's conjecture of July 7, 2022. [2] OEIS Foundation, \oeis{A354253}, July 8, 2022. [3] The Omega Institute, \href{https://the-omega-institute.github.io/trureturing-mdbook/Blueprint/D5/S1/Recurrence/Periodic/IntegralEgfTotientPeriod.html}{\emph{Totient Periods for Integral Exponential Substitutions}}, prior proof of the general period bound. Historical priority for the minimum-period formulas is unverified.}
+\end{document}
