@@ -1,0 +1,28 @@
+name = "ColossallyAbundantRobinSigns"
+version = "1.0.0"
+defaultTargets = ["FromRH"]
+
+[[require]]
+name = "tree"
+git = "https://github.com/Deicyde/riemann-hypothesis.git"
+rev = "40e56bab026552e089d7afcfeff08d2defb9c005"
+
+[[require]]
+name = "Robin1984"
+git = "https://github.com/kimihiro64/Robin1984.git"
+rev = "5ce18bf3487c68d9353276ef5811057f60d17808"
+
+[[lean_lib]]
+name = "RobinSigns"
+
+[[lean_lib]]
+name = "FromRH"
+
+[[lean_lib]]
+name = "Eight"
+
+[[lean_lib]]
+name = "Champions"
+
+[[lean_lib]]
+name = "Exact"
