@@ -36,8 +36,9 @@ jobs:
           set -euo pipefail
           lake exe cache get
           cp ../../research/november-2026/{IdonealFactorWindow,RobinTransfer,BipartiteMatching,MatchingLowerBound}.lean .
+          mkdir -p "$RUNNER_TEMP/november-checked"
           for proof in IdonealFactorWindow RobinTransfer BipartiteMatching; do
-            lake env lean -o "$proof.olean" "$proof.lean"
+            lake env lean -o "$RUNNER_TEMP/november-checked/$proof.olean" "$proof.lean"
           done
           cat > CheckLocal.lean <<'LEAN'
           import IdonealFactorWindow
@@ -47,7 +48,7 @@ jobs:
           #print axioms NovemberRobin.odd_bound
           #print axioms NovemberMatching.weighted_eq_permanent
           LEAN
-          LEAN_PATH=".:$(lake env printenv LEAN_PATH)" lean CheckLocal.lean | tee local-audit.txt
+          LEAN_PATH="$RUNNER_TEMP/november-checked:$(lake env printenv LEAN_PATH)" lean CheckLocal.lean | tee local-audit.txt
           python ../../research/november-2026/check_axioms.py local-audit.txt 3
           python ../../research/november-2026/idoneal.py --verify 1000000
       - name: Rebuild the permanent lower bound and apply it
@@ -56,8 +57,8 @@ jobs:
         run: |
           set -euo pipefail
           lake build Solution
-          export LEAN_PATH=".:$(lake env printenv LEAN_PATH)"
-          lean -o MatchingLowerBound.olean MatchingLowerBound.lean
+          export LEAN_PATH="$RUNNER_TEMP/november-checked:$(lake env printenv LEAN_PATH)"
+          lean -o "$RUNNER_TEMP/november-checked/MatchingLowerBound.olean" MatchingLowerBound.lean
           printf '%s\n' 'import MatchingLowerBound' '#print axioms NovemberMatching.matching_circuit_lower_bound' > CheckMatching.lean
           lean CheckMatching.lean | tee matching-audit.txt
           python ../../research/november-2026/check_axioms.py matching-audit.txt 1
