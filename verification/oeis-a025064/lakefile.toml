@@ -1,0 +1,24 @@
+name = "oeis_a025064_proof"
+defaultTargets = ["RegistryProof"]
+
+[[require]]
+name = "tree"
+git = "https://github.com/leanprover-community/riemann-hypothesis.git"
+rev = "507a75d91d131d627b380df4e32f6e9fb21dd067"
+
+[[require]]
+name = "Weinberger"
+git = "https://github.com/senamakel/weinberger-grh.git"
+rev = "5d3c42b16ab217a82fcfe74e75cd7ddc65ce7c66"
+
+[[lean_lib]]
+name = "Positions"
+
+[[lean_lib]]
+name = "FromGRH"
+
+[[lean_lib]]
+name = "RegistryStatement"
+
+[[lean_lib]]
+name = "RegistryProof"
