@@ -1,20 +1,19 @@
 // Prove that each n from 2 through 7587 admits a prime k*(k+1)^phi(n-k)+1.
-// The input pairs (n,k) are from Dev Pratap Singh, DevSingh05/oeis-a234360,
+// The input pairs (n,k) below 7588 are from Dev Pratap Singh, DevSingh05/oeis-a234360,
 // revision 2dd137006c176c1b8780f50452e9a102f695d80c, data/witnesses_c3.txt.
 // Its MIT license is reproduced in proofs/OeisA234360.conjecture_3.lean.
 // Input: sequential lines "n k" (find a full-order base) or "n k a" (verify
-// the supplied base). Output: n k a. The accompanying TSV uses bases found here.
+// the supplied base). Output: n k a. The accompanying tables use bases found here.
 // Build: c++ -O3 -std=c++17 -fopenmp prove_7588_minimal.cpp -lgmpxx -lgmp -o minimal
 // Run: OMP_NUM_THREADS=3 ./minimal tools/sun_7588_prime_witnesses.tsv > checked.tsv
+// To verify another contiguous block, append its first and last n after the path.
 #include <gmpxx.h>
-#include <array>
+#include <charconv>
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #include <string>
 #include <vector>
-
-constexpr unsigned limit = 7588;
 
 std::vector<unsigned> prime_divisors(unsigned value) {
     std::vector<unsigned> factors;
@@ -47,15 +46,25 @@ bool full_order(const mpz_class& m, const mpz_class& order,
 struct Row { unsigned k = 0; unsigned base = 0; };
 
 int main(int argc, char** argv) {
-    if (argc != 2) {
-        std::cerr << "Usage: minimal path/to/witnesses.tsv\n";
+    if (argc != 2 && argc != 4) {
+        std::cerr << "Usage: minimal path/to/witnesses.tsv [first_n last_n]\n";
         return 2;
     }
+    unsigned first = 2, last = 7587;
+    if (argc == 4) {
+        auto parse = [](const std::string& text, unsigned& value) {
+            const auto end = text.data() + text.size();
+            const auto converted = std::from_chars(text.data(), end, value);
+            return converted.ec == std::errc{} && converted.ptr == end;
+        };
+        if (!parse(argv[2], first) || !parse(argv[3], last) ||
+            first < 2 || first > last || last > 10000) return 2;
+    }
     std::ifstream input(argv[1]);
-    std::array<Row, limit> rows{};
-    std::array<unsigned char, limit> fixed{};
+    std::vector<Row> rows(last + 1);
+    std::vector<unsigned char> fixed(last + 1);
     std::string line;
-    for (unsigned n = 2; n < limit; ++n) {
+    for (unsigned n = first; n <= last; ++n) {
         if (!std::getline(input, line)) return 2;
         std::istringstream in(line);
         unsigned index;
@@ -71,13 +80,13 @@ int main(int argc, char** argv) {
     }
     while (std::getline(input, line)) if (line.find_first_not_of(" \t\r") != std::string::npos) return 2;
 
-    std::array<unsigned, limit> phi{};
-    for (unsigned n = 1; n < limit; ++n) {
+    std::vector<unsigned> phi(last + 1);
+    for (unsigned n = 1; n <= last; ++n) {
         phi[n] = n;
         for (unsigned p : prime_divisors(n)) phi[n] -= phi[n] / p;
     }
     #pragma omp parallel for schedule(dynamic, 1)
-    for (unsigned n = 2; n < limit; ++n) {
+    for (unsigned n = first; n <= last; ++n) {
         const unsigned k = rows[n].k;
         mpz_class order;
         mpz_ui_pow_ui(order.get_mpz_t(), k + 1, phi[n - k]);
@@ -94,15 +103,15 @@ int main(int argc, char** argv) {
         }
     }
     unsigned largest_base = 0;
-    for (unsigned n = 2; n < limit; ++n) {
+    for (unsigned n = first; n <= last; ++n) {
         if (!rows[n].base) {
             std::cerr << "No valid full-order certificate for n = " << n << '\n';
             return 1;
         }
         if (rows[n].base > largest_base) largest_base = rows[n].base;
     }
-    for (unsigned n = 2; n < limit; ++n)
+    for (unsigned n = first; n <= last; ++n)
         std::cout << n << '\t' << rows[n].k << '\t' << rows[n].base << '\n';
-    std::cerr << "Proved prime witnesses for all 7586 smaller n; largest base "
+    std::cerr << "Proved prime witnesses for every n in [" << first << ", " << last << "]; largest base "
               << largest_base << ".\n";
 }
