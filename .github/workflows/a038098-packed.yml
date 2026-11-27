@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           repository: DomTheDeveloper/formal-conjectures
-          ref: f1c3f847a1829f55d8cb98774d5e999236c126e9
+          ref: 78145856e83d8e73b2ded5bdf9e9026e402210c3
           persist-credentials: false
       - name: Install pinned Lean toolchain
         run: |
@@ -37,7 +37,12 @@ jobs:
       - name: Verify the cube inequalities and audit their axioms
         run: |
           set -eo pipefail
-          lake env lean --tstack=65536 -o .lake/build/lib/lean/A038098/PackedCases.olean A038098/PackedCases.lean | tee "$RUNNER_TEMP/axioms.log"
+          mkdir -p .lake/build/lib/lean/A038098/Certificate
+          while IFS= read -r file; do
+            echo "Checking $file"
+            /usr/bin/time -f 'elapsed %e seconds, peak %M KiB' lake env lean -j1 --tstack=65536 -o ".lake/build/lib/lean/${file%.lean}.olean" "$file"
+          done < A038098/Certificate/modules.txt
+          lake env lean -j1 --tstack=65536 -o .lake/build/lib/lean/A038098/PackedCases.olean A038098/PackedCases.lean | tee "$RUNNER_TEMP/axioms.log"
           grep -F 'Sun.PackedCases.checked_cubes' "$RUNNER_TEMP/axioms.log"
           if grep -E 'sorryAx|native_decide|ofReduceBool|trustCompiler' "$RUNNER_TEMP/axioms.log"; then exit 1; fi
       - name: Retain the actual Lean certificate
@@ -45,4 +50,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: A038098-packed-Lean
-          path: A038098/PackedCases.lean
+          path: |
+            A038098/PackedCases.lean
+            A038098/Certificate/*.lean
