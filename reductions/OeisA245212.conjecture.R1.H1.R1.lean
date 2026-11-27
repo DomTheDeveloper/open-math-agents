@@ -2,7 +2,7 @@ import OMAReductions.R_OeisA245212_conjecture_R1
 
 /-! A245212 has a positive gap on every odd product of two distinct prime powers.
 For such n the gap is at least n times its divisor count divided by eight.
-This continues the parent reduction by @BetAdmin237 for Jaroslav Krizek’s OEIS conjecture.
+This continues the prime-power reduction in project PR 488 for Jaroslav Krizek’s OEIS conjecture.
 The remaining odd cases are separated by whether twice the totient reaches n. -/
 
 namespace OMA.R_OeisA245212_conjecture_R1_H1_R1
