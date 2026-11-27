@@ -1,0 +1,34 @@
+name: Verify A038098 analytic lemmas
+on:
+  push:
+    branches: [audit/sun-a038098-cubes]
+    paths: ['.github/workflows/a038098-analytic.yml']
+permissions:
+  contents: read
+concurrency:
+  group: a038098-analytic
+  cancel-in-progress: true
+jobs:
+  kernel:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          repository: DomTheDeveloper/formal-conjectures
+          ref: b75aef957251f0aa99b959a696c078c224fb97b7
+          persist-credentials: false
+      - name: Install pinned Lean toolchain
+        run: |
+          curl -fsSL --retry 3 https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Fetch analytic dependencies
+        env:
+          MATHLIB_NO_CACHE_ON_UPDATE: 1
+        run: |
+          lake exe cache get Mathlib.NumberTheory.Chebyshev Mathlib.Analysis.Real.Pi.Bounds Mathlib.Analysis.Complex.ExponentialBounds Mathlib.Tactic.Linarith Mathlib.Tactic.Positivity
+      - name: Verify the analytic deductions
+        run: |
+          set -eo pipefail
+          lake env lean A038098/Analytic.lean | tee "$RUNNER_TEMP/a038098-analytic.log"
+          if grep -E 'sorryAx|ofReduceBool|native_decide|trustCompiler' "$RUNNER_TEMP/a038098-analytic.log"; then exit 1; fi
