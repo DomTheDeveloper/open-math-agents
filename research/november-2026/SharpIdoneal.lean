@@ -2,9 +2,9 @@ import IdonealFactorWindow
 
 namespace IdonealFactorWindow
 
-/-- An explicit obstruction to a universal first-term bound of thirteen. -/
 set_option maxRecDepth 100000 in
 set_option maxHeartbeats 0 in
+/-- An explicit obstruction to a universal first-term bound of thirteen. -/
 theorem least_first_at_136173 :
     (14 < 17 ∧ 17 < 4385 ∧ 136173 = 14*17 + 17*4385 + 14*4385) ∧
     ∀ a b c : Nat, 0 < a → a < b → b < c → 136173 = a*b + b*c + a*c → 14 ≤ a := by
