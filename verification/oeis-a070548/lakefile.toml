@@ -1,0 +1,24 @@
+name = "oeis_a070548_proof"
+defaultTargets = ["FromRH"]
+
+[[require]]
+name = "tree"
+git = "https://github.com/leanprover-community/riemann-hypothesis.git"
+rev = "507a75d91d131d627b380df4e32f6e9fb21dd067"
+
+[[require]]
+name = "Mertens"
+git = "https://github.com/senamakel/mertens-rh.git"
+rev = "cbe542d652065099b289bb6599f32bc7d955f733"
+
+[[lean_lib]]
+name = "Mobius"
+
+[[lean_lib]]
+name = "Density"
+
+[[lean_lib]]
+name = "Signs"
+
+[[lean_lib]]
+name = "FromRH"
