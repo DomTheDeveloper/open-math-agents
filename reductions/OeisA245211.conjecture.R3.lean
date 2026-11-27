@@ -2,7 +2,9 @@ import FormalConjectures.OEIS.«245211»
 
 /-!
 Jaroslav Krizek's A245211 fixed-point conjecture. For distinct primes p,q
-and any positive e, the only fixed point of the form p^e*q is 21.
+and any positive e, the only fixed point of the form p^e*q is 21 and
+there are no fixed points of the form p^e*q^2. On arbitrary two-prime
+support the ratio of the positive exponents lies between 1/3 and 3.
 Every fixed point with prime divisor p also satisfies n ≤ p^(τ(n)-1).
 
 The full divisor moment factors on coprime arguments, as in desenyon's
@@ -452,10 +454,296 @@ theorem prime_power_times_prime {p q e : ℕ} (hp : p.Prime) (hq : q.Prime)
       change p^(k+3)-2*a (p^(k+3)) ≤ 2*(k+3)+3 at hu
       omega
 
+private theorem two_budget {p q : ℕ} (hp : p.Prime) (hq : q.Prime) (hneq : p ≠ q)
+    (j b : ℕ) (hb : 0 < b) (hf : a (p^(j+1)*q^b) = p^(j+1)*q^b) :
+    (j+1)*(b+1) < p := by
+  have hq1 := Nat.one_lt_pow hb.ne' hq.one_lt
+  have hp0 := pow_pos hp.pos j
+  have hh : p*(p^j*q^b) = p^(j+1)*q^b := by rw [pow_succ']; ac_rfl
+  have h := cofactor_budget hp.one_lt (show 1 < p^j*q^b by nlinarith)
+    (show a (p*(p^j*q^b)) = p*(p^j*q^b) by simpa only [hh] using hf)
+  rwa [(Nat.coprime_pow_primes j b hp hq hneq).card_divisors_mul, card_pow hp, card_pow hq] at h
+
+private theorem scaled_gap_step {p : ℕ} (hp : p.Prime) (k c C t : ℕ)
+    (hC : c*a (p^k)+C ≤ p^k) (hs : c*(k+1)+1+t ≤ p) :
+    c*a (p^(k+1))+C+t*p^k ≤ p^(k+1) := by
+  rw [pow_step hp, pow_succ]
+  nlinarith only [hC, Nat.mul_le_mul_right (p^k) hs]
+
+private theorem scaled_gap_one {p : ℕ} (hp : p.Prime) (k c : ℕ)
+    (hb : c*k < p) : c*a (p^k)+1 ≤ p^k := by
+  induction k with
+  | zero => simp [a]
+  | succ k ih =>
+    have hck : c*k < p := (Nat.mul_le_mul_left c (by omega : k ≤ k+1)).trans_lt hb
+    simpa using scaled_gap_step hp k c 1 0 (ih hck) (by omega)
+
+private theorem scaled_gap_large {p : ℕ} (hp : p.Prime) (k c : ℕ)
+    (hb : c*(k+2) < p) :
+    c*a (p^(k+2)) + (1+c*p^k) ≤ p^(k+2) := by
+  have hk := scaled_gap_one hp k c ((Nat.mul_le_mul_left c (by omega : k ≤ k+2)).trans_lt hb)
+  have h1 := scaled_gap_step hp k c 1 c hk (by nlinarith only [hb])
+  have h2 := scaled_gap_step hp (k+1) c (1+c*p^k) 0 (by simpa only [Nat.add_assoc] using h1)
+    (by change c*(k+2)+1+0 ≤ p; omega)
+  simpa only [zero_mul, add_zero] using h2
+
+private theorem prime_times_proper {q : ℕ} (hq : q.Prime) (b : ℕ) (h : b ≤ q) :
+    q*a (q^b) ≤ (b+1)*q^b := by
+  induction b with
+  | zero => simp [a]
+  | succ b ih =>
+    have hi := ih (by omega)
+    rw [pow_step hq, pow_succ]
+    nlinarith only [hi, Nat.mul_le_mul_right (q^b) h]
+
+private theorem prime_power_cross_dvd {p q a' b : ℕ} (hp : p.Prime) (hq : q.Prime)
+    (hneq : p ≠ q) (ha : 0 < a') (hf : a (p^a'*q^b) = p^a'*q^b) :
+    p^a' ∣ a (q^b)+q^b*(b+1) := by
+  obtain ⟨k,rfl⟩ := Nat.exists_eq_succ_of_ne_zero ha.ne'
+  let P := p^(k+1)
+  let Q := q^b
+  have hP : 0 < P := pow_pos hp.pos _
+  have hQ : 0 < Q := pow_pos hq.pos _
+  have hc := Nat.coprime_pow_primes (k+1) b hp hq hneq
+  have hwork := moment_mul hc
+  rw [moment_eq (Nat.mul_pos hP hQ).ne', hf, hc.card_divisors_mul,
+      moment_eq hP.ne', moment_eq hQ.ne', card_pow hp, card_pow hq] at hwork
+  have hmult : P ∣ (a P+P*(k+1+1))*(a Q+Q*(b+1)) := by
+    rw [← hwork]
+    exact dvd_add (dvd_mul_right _ _) (dvd_mul_of_dvd_left (dvd_mul_right _ _) _)
+  have hd : p ∣ P := dvd_pow_self p (by omega : k+1 ≠ 0)
+  have hcT : p.Coprime (a P+P*(k+1+1)) := by
+    apply hp.coprime_iff_not_dvd.mpr
+    intro hdT
+    have hdA := (Nat.dvd_add_iff_left (hd.trans (dvd_mul_right P (k+1+1)))).mpr hdT
+    have hm : a P % p = 1 := pow_one_mod hp k
+    rw [Nat.mod_eq_zero_of_dvd hdA] at hm
+    omega
+  exact (hcT.pow_left _).dvd_of_dvd_mul_left hmult
+
+/-- On two-prime support, neither exponent can exceed three times the other. -/
+theorem exponent_ratio {p q a' b : ℕ} (hp : p.Prime) (hq : q.Prime) (hneq : p ≠ q)
+    (ha : 0 < a') (hb : 0 < b) (hf : a (p^a'*q^b) = p^a'*q^b) : a' ≤ 3*b := by
+  obtain ⟨k,rfl⟩ := Nat.exists_eq_succ_of_ne_zero ha.ne'
+  cases k with
+  | zero => omega
+  | succ k =>
+    let e := k+2
+    let P := p^e
+    let Q := q^b
+    let A := a P
+    let B := a Q
+    let c := b+1
+    let g := P-c*A
+    have hP : 0 < P := pow_pos hp.pos _
+    have hQ : 0 < Q := pow_pos hq.pos _
+    have hPP : 1 < P := Nat.one_lt_pow (by simp [e]) hp.one_lt
+    have hQQ : 1 < Q := Nat.one_lt_pow hb.ne' hq.one_lt
+    have hc : P.Coprime Q := Nat.coprime_pow_primes _ _ hp hq hneq
+    have hpB : c*e < p := by
+      simpa only [Nat.mul_comm (k+1+1)] using two_budget hp hq hneq (k+1) b hb hf
+    obtain ⟨j,hj⟩ := Nat.exists_eq_succ_of_ne_zero hb.ne'
+    have hbudgetQ : b*(e+1) < q := by
+      subst b
+      exact two_budget hq hp (Ne.symm hneq) j e (by simp [e])
+        (by simpa only [Nat.mul_comm (q^(j+1))] using hf)
+    have hbq : b ≤ q := (Nat.le_mul_of_pos_right b (by omega : 0 < e+1)).trans hbudgetQ.le
+    have hsmallA : A < P := (Nat.le_mul_of_pos_left A (card_pos hQ)).trans_lt
+      (cut_small hQQ hPP hc.symm (by simpa only [Nat.mul_comm Q] using hf))
+    have hsmallB : B < Q := (Nat.le_mul_of_pos_left B (card_pos hP)).trans_lt
+      (cut_small hPP hQQ hc hf)
+    have hgap : c*A+(1+c*p^k) ≤ P := scaled_gap_large hp k c hpB
+    have hPe : c*A+g = P := Nat.add_sub_of_le (by omega)
+    have hdiv := prime_power_cross_dvd hp hq hneq (by dsimp [e]; omega : 0 < e) hf
+    have hPcut : P ≤ B+Q*c := Nat.le_of_dvd (by dsimp [c]; positivity) hdiv
+    have heq := cut_balance hP hQ hc hf
+    rw [moment_eq hP.ne', card_pow hp, card_pow hq] at heq
+    have heq' : (A+P*(e+1))*B+Q*c*A=P*Q := heq
+    have hQg : Q*g=(A+P*(e+1))*B := by nlinarith only [heq', congrArg (Q*·) hPe]
+    have hqB : q*B ≤ c*Q := prime_times_proper hq b hbq
+    have hfirst : q*g ≤ c*(A+P*(e+1)) := by
+      refine Nat.le_of_mul_le_mul_left ?_ hQ
+      calc
+        Q*(q*g) = (A+P*(e+1))*(q*B) := by rw [← Nat.mul_assoc, Nat.mul_comm Q q, Nat.mul_assoc, hQg]; ring
+        _ ≤ (A+P*(e+1))*(c*Q) := Nat.mul_le_mul_left _ hqB
+        _ = Q*(c*(A+P*(e+1))) := by ring
+    have hglo : c*p^k < g := by omega
+    have hqsmall : q < (e+2)*p^2 := by
+      have hc0 : 0 < c := by simp [c]
+      have hp0 := pow_pos hp.pos k
+      have hh : q*(c*p^k) < q*g := (Nat.mul_lt_mul_left hq.pos).mpr hglo
+      have hterm : A+P*(e+1) ≤ (e+2)*P := by nlinarith only [hsmallA]
+      have hchain := hh.trans_le (hfirst.trans (Nat.mul_le_mul_left c hterm))
+      have hx : P = p^k*p^2 := pow_add p k 2
+      rw [hx] at hchain
+      apply (Nat.mul_lt_mul_right (Nat.mul_pos hc0 hp0)).mp
+      simpa only [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm] using hchain
+    have hc2 : 2 ≤ c := by dsimp [c]; omega
+    have hpe : e+2 ≤ p := by
+      have he2 : 2 ≤ e := by simp [e]
+      nlinarith only [hpB, Nat.mul_le_mul_right e hc2, he2]
+    have hpc : b+2 ≤ p := by
+      have he2 : 2 ≤ e := by simp [e]
+      have h := Nat.mul_le_mul_left c he2
+      dsimp only [c] at h hpB
+      omega
+    have hq3 : q < p^3 := by
+      calc
+        q < (e+2)*p^2 := hqsmall
+        _ ≤ p*p^2 := Nat.mul_le_mul_right _ hpe
+        _ = p^3 := by ring
+    have hend : P < p^(3*b+1) := by
+      calc
+        P ≤ B+Q*c := hPcut
+        _ < Q*(b+2) := by dsimp only [c]; nlinarith only [hsmallB]
+        _ ≤ (p^3)^b*p := Nat.mul_le_mul (Nat.pow_le_pow_left hq3.le b) hpc
+        _ = p^(3*b+1) := by rw [pow_succ p (3*b), pow_mul p 3 b]
+    have := (Nat.pow_lt_pow_iff_right hp.one_lt).mp hend
+    change k+2 < 3*b+1 at this
+    omega
+
+private theorem proper_pow_sum {p : ℕ} (hp : p.Prime) (e : ℕ) :
+    a (p^e) = ∑ j ∈ range e, p^j*(j+1) := by
+  simp only [a, Nat.properDivisors_prime_pow hp, sum_map, Function.Embedding.coeFn_mk, card_pow hp]
+
+/-- For one specified exponent, the entire two-prime equality set is effectively bounded. -/
+theorem fixed_exponent_height {p q e b : ℕ} (hp : p.Prime) (hq : q.Prime)
+    (hneq : p ≠ q) (he : 0 < e) (hb : 0 < b) (hf : a (p^e*q^b) = p^e*q^b) :
+    let K := (3*b+1)*(b+1)
+    p^e*q^b ≤ (K^2)^(K-1) := by
+  have hP := Nat.one_lt_pow he.ne' hp.one_lt
+  have hQ := Nat.one_lt_pow hb.ne' hq.one_lt
+  have h := height_of_divisor_count (show 1 < p^e*q^b by nlinarith) hf
+  rw [(Nat.coprime_pow_primes e b hp hq hneq).card_divisors_mul, card_pow hp, card_pow hq] at h
+  have hd := Nat.mul_le_mul_right (b+1) (Nat.succ_le_succ (exponent_ratio hp hq hneq he hb hf))
+  dsimp only
+  exact h.trans ((Nat.pow_le_pow_left (Nat.pow_le_pow_left hd 2) _).trans
+    (Nat.pow_le_pow_right (by positivity) (Nat.sub_le_sub_right hd 1)))
+
+private theorem square_table : ∀ p : Fin 46, ∀ e : Fin 7,
+    2 ≤ e.val → 3*e.val < p.val →
+    let P := p.val^e.val
+    let A := ∑ j ∈ range e.val, p.val^j*(j+1)
+    let T := A+P*(e.val+1)
+    let g := P-3*A
+    let z := 2*T/g+1
+    z^2*g ≠ T*(2*z+1) := by decide +kernel
+
+private theorem no_square_ordered {p q e : ℕ} (hp : p.Prime) (hq : q.Prime)
+    (hneq : p ≠ q) (he : 2 ≤ e) (hpq : p ≤ q) (hf : a (p^e*q^2) = p^e*q^2) : False := by
+  let P := p^e
+  let Q := q^2
+  let A := a P
+  let B := a Q
+  let T := A+P*(e+1)
+  let g := P-3*A
+  have hP : 0 < P := pow_pos hp.pos _
+  have hQ : 0 < Q := pow_pos hq.pos _
+  have hPP : 1 < P := Nat.one_lt_pow (by omega) hp.one_lt
+  have hQQ : 1 < Q := Nat.one_lt_pow (by decide : 2 ≠ 0) hq.one_lt
+  have hc : P.Coprime Q := Nat.coprime_pow_primes e 2 hp hq hneq
+  have hbase : 3*e < p := by
+    obtain ⟨i,hi⟩ := Nat.exists_eq_succ_of_ne_zero (by omega : e ≠ 0)
+    subst e
+    simpa only [Nat.mul_comm 3] using two_budget hp hq hneq i 2 (by decide) hf
+  have hb := exponent_ratio hp hq hneq (by omega : 0 < e) (by decide : 0 < 2) hf
+  have hgap : 3*A+1 ≤ P := scaled_gap_one hp e 3 hbase
+  have hPe : 3*A+g = P := Nat.add_sub_of_le (by omega)
+  have hsm : A < P := by omega
+  have ht : T ≤ (e+2)*P := by dsimp only [T]; nlinarith only [hsm]
+  have hpA : p*A ≤ (e+1)*P := prime_times_proper hp e (by omega)
+  have hpB : p*B ≤ 3*Q := (Nat.mul_le_mul_right B hpq).trans (prime_times_proper hq 2 hq.two_le)
+  have hbal := cut_balance hP hQ hc hf
+  rw [moment_eq hP.ne', card_pow hp, card_pow hq] at hbal
+  have hbal' : T*B+Q*3*A=P*Q := hbal
+  have hc1 := Nat.mul_le_mul ht hpB
+  have hc2 := Nat.mul_le_mul_left (Q*3) hpA
+  have hpc : (P*Q)*p ≤ (P*Q)*(3*(2*e+3)) := by
+    nlinarith only [hc1,hc2,congrArg (p*·) hbal']
+  have hlimit := Nat.le_of_mul_le_mul_left hpc (Nat.mul_pos hP hQ)
+  have ha1 : a q = 1 := by simp [a, hq.properDivisors]
+  have hBQ : B = 2*q+1 := by
+    simpa only [pow_one,ha1, Nat.mul_comm q 2, Nat.add_comm 1] using pow_step hq 1
+  have hgQ : Q*g=T*(2*q+1) := by
+    rw [← hBQ]
+    nlinarith only [hbal', congrArg (Q*·) hPe]
+  have hd : Q ∣ T := prime_power_cross_dvd hq hp hneq.symm (by decide : 0 < 2)
+    (by simpa only [Nat.mul_comm (q^2)] using hf)
+  obtain ⟨u,hu⟩ := hd
+  have hu0 : 0 < u := by
+    by_contra! h
+    have huZ : u = 0 := by omega
+    rw [huZ,mul_zero] at hu
+    dsimp only [T] at hu
+    have hh := Nat.mul_pos hP (show 0 < e+1 by omega)
+    omega
+  have hgu : g=(2*q+1)*u := by
+    apply Nat.eq_of_mul_eq_mul_left hQ
+    rw [hgQ,hu]; ring
+  have hq0 := hq.pos
+  have hm : q-1+1=q := Nat.sub_add_cancel (by omega)
+  have hlow : (q-1)*g ≤ 2*T := by
+    have hh := congrArg (·*g) hm
+    dsimp only [Q] at hu
+    nlinarith only [hh,hu,hgu,congrArg (q*·) hgu, Nat.zero_le (q*u),Nat.zero_le u]
+  have hhigh : 2*T < (q-1+1)*g := by
+    rw [hm,hgu,hu]
+    dsimp only [Q]
+    nlinarith only [Nat.mul_pos hq0 hu0]
+  have hz : 2*T/g+1=q := by rw [Nat.div_eq_of_lt_le hlow hhigh, hm]
+  have htst := square_table ⟨p,by omega⟩ ⟨e,by omega⟩ he hbase
+  have hA : A = ∑ j ∈ range e, p^j*(j+1) := proper_pow_sum hp e
+  dsimp only at htst
+  rw [← hA] at htst
+  change (2*T/g+1)^2*g ≠ T*(2*(2*T/g+1)+1) at htst
+  rw [hz] at htst
+  exact htst hgQ
+
+/-- No fixed point has the shape p^e*q^2 for distinct primes p,q and positive e. -/
+theorem prime_power_times_prime_square {p q e : ℕ} (hp : p.Prime) (hq : q.Prime)
+    (hneq : p ≠ q) (he : 0 < e) : a (p^e*q^2) ≠ p^e*q^2 := by
+  intro hf
+  by_cases he1 : e = 1
+  · subst e
+    have h := prime_power_times_prime hq hp hneq.symm (by decide : 0 < 2)
+      (by simpa only [pow_one, Nat.mul_comm (q^2)] using hf)
+    have hdiv : q^2 ∣ 21 := ⟨p,h.symm⟩
+    have hq21 : q ∣ 21 := (dvd_pow_self q (by decide : 2 ≠ 0)).trans hdiv
+    have hh : q = 3 ∨ q = 7 := by
+      have hd : q ∣ 3*7 := hq21
+      rcases hq.dvd_mul.mp hd with h | h
+      · exact Or.inl ((Nat.dvd_prime_two_le (by decide : Nat.Prime 3) hq.two_le).mp h)
+      · exact Or.inr ((Nat.dvd_prime_two_le (by decide : Nat.Prime 7) hq.two_le).mp h)
+    rcases hh with rfl | rfl <;> norm_num at hdiv
+  have he2 : 2 ≤ e := by omega
+  by_cases hor : p ≤ q
+  · exact no_square_ordered hp hq hneq he2 hor hf
+  by_cases heq : e = 2
+  · subst e
+    exact no_square_ordered (e := 2) hq hp hneq.symm (by decide) (by omega)
+      (by simpa only [Nat.mul_comm (q^2)] using hf)
+  have hpdvd := prime_power_cross_dvd hp hq hneq he hf
+  have hpos := pow_pos hq.pos 2
+  have hle := Nat.le_of_dvd (show 0 < a (q^2)+q^2*(2+1) by positivity) hpdvd
+  have hq1 := hq.one_lt
+  have hp3 : 3 ≤ e := by omega
+  have hp5 : 5 ≤ p := by
+    obtain ⟨i,hi⟩ := Nat.exists_eq_succ_of_ne_zero he.ne'
+    subst e
+    have := two_budget hp hq hneq i 2 (by decide) hf
+    omega
+  have hQ : a (q^2) < q^2 := (Nat.le_mul_of_pos_left _ (card_pos (pow_pos hp.pos e))).trans_lt
+    (cut_small (Nat.one_lt_pow he.ne' hp.one_lt) (Nat.one_lt_pow (by decide : 2 ≠ 0) hq.one_lt)
+      (Nat.coprime_pow_primes e 2 hp hq hneq) hf)
+  have h3 : p^3 ≤ p^e := Nat.pow_le_pow_right hp.pos hp3
+  have hqp := Nat.pow_le_pow_left (by omega : q ≤ p) 2
+  have hh := Nat.mul_le_mul_right (p^2) hp5
+  nlinarith only [hle, hQ, h3, hqp, hh, pow_pos hp.pos 2]
+
 /-- The published least-prime computations address these finite ranges. -/
 def H1 : Prop := ∀ n : ℕ, 1 < n → n.minFac ≤ 433 →
   n ≤ n.minFac^(2*n.minFac-3) → (n.minFac % 3 = 1 → n.minFac^2 ∣ n) →
-  (¬ ∃ p q e : ℕ, p.Prime ∧ q.Prime ∧ p ≠ q ∧ 0 < e ∧ n = p^e*q) →
+  (¬ ∃ p q e : ℕ, p.Prime ∧ q.Prime ∧ p ≠ q ∧ 0 < e ∧ (n = p^e*q ∨ n = p^e*q^2)) →
   a n = n → n = 21
 
 /-- The remaining least primes each have a finite height bound. Every
@@ -464,7 +752,7 @@ def H2 : Prop := ∀ n : ℕ, 1 < n → 433 < n.minFac →
   n.divisors.card ≤ 2*(n.minFac-1) → n ≤ n.minFac^(n.divisors.card-1) →
   (∀ x y : ℕ, 1 < x → 1 < y → x.Coprime y → x*y = n →
     x.divisors.card < Nat.gcd y (∑ d ∈ x.divisors, d * d.divisors.card)) →
-  (¬ ∃ p q e : ℕ, p.Prime ∧ q.Prime ∧ p ≠ q ∧ 0 < e ∧ n = p^e*q) →
+  (¬ ∃ p q e : ℕ, p.Prime ∧ q.Prime ∧ p ≠ q ∧ 0 < e ∧ (n = p^e*q ∨ n = p^e*q^2)) →
   a n ≠ n
 
 theorem main : H1 → H2 → type_of% @OeisA245211.conjecture := by
@@ -479,9 +767,11 @@ theorem main : H1 → H2 → type_of% @OeisA245211.conjecture := by
       omega
     have hp := Nat.minFac_prime (show n ≠ 1 by omega)
     have hd := Nat.minFac_dvd n
-    by_cases hs : ∃ p q e : ℕ, p.Prime ∧ q.Prime ∧ p ≠ q ∧ 0 < e ∧ n = p^e*q
-    · obtain ⟨p,q,e,hp',hq,hpq,he,rfl⟩ := hs
-      exact prime_power_times_prime hp' hq hpq he hf
+    by_cases hs : ∃ p q e : ℕ, p.Prime ∧ q.Prime ∧ p ≠ q ∧ 0 < e ∧ (n = p^e*q ∨ n = p^e*q^2)
+    · obtain ⟨p,q,e,hp',hq,hpq,he,heq⟩ := hs
+      rcases heq with rfl | rfl
+      · exact prime_power_times_prime hp' hq hpq he hf
+      · exact (prime_power_times_prime_square hp' hq hpq he hf).elim
     by_cases hlo : n.minFac ≤ 433
     · exact h1 n hgt hlo (height_of_small_prime hn hp hd le_rfl hf)
         (least_prime_one_mod_three hgt hf) hs hf
