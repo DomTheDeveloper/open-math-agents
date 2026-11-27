@@ -1,0 +1,117 @@
+\documentclass[11pt,letterpaper]{article}
+\usepackage[margin=0.86in,top=0.76in,bottom=0.76in]{geometry}
+\usepackage{amsmath,amssymb,booktabs,array,xcolor,fancyhdr,hyperref,microtype}
+\definecolor{ink}{HTML}{122843}
+\definecolor{accent}{HTML}{176865}
+\hypersetup{colorlinks=true,urlcolor=accent,linkcolor=accent,pdftitle={Prime divisors of fifteen algebraic coefficient sequences}}
+\pagestyle{fancy}\fancyhf{}\renewcommand{\headrulewidth}{0pt}
+\fancyfoot[L]{\footnotesize\color{accent}Prime divisors of algebraic coefficients}
+\fancyfoot[R]{\footnotesize\color{accent}\thepage}
+\setlength{\footskip}{22pt}\setlength{\parskip}{5pt}\setlength{\parindent}{0pt}
+\newcommand{\secname}[1]{\vspace{6pt}{\large\sffamily\bfseries\color{ink}#1}\par}
+\newcommand{\oeis}[1]{\href{https://oeis.org/A#1}{A#1}}
+\newcommand{\F}{\mathbb F}
+\begin{document}
+{\footnotesize\sffamily\bfseries\color{accent} NUMBER THEORY \quad / \quad RESEARCH NOTE \hfill 26 NOVEMBER 2026}\par
+\vspace{6pt}
+{\fontsize{25}{29}\selectfont\sffamily\bfseries\color{ink}Prime divisors of fifteen algebraic\\ coefficient sequences}\par
+\vspace{5pt}
+Clark Kimberling asked whether every prime divides infinitely many terms in each of fifteen sequences obtained from powers of algebraic numbers. We prove the assertion for twelve sequences and exhibit a prime dividing no term in each of the remaining three. In every positive case, the divisible indices include an arithmetic progression and their successive gaps are eventually periodic.
+
+\secname{The classification}
+For $c=1,2,3$, define the four integer sequences $A_n,B_n,C_n,D_n$ by
+\[
+ (c+\sqrt2+\sqrt3)^n=A_n+B_n\sqrt2+C_n\sqrt3+D_n\sqrt6.
+\]
+The letters refer to a fixed value of $c$. For the cubic family write $u=\sqrt[3]2$ and expand $(u+u^2)^n=E_n+F_n u+G_nu^2$. All sequences start at $n=0$.
+\begin{center}
+\renewcommand{\arraystretch}{1.18}
+\begin{tabular}{@{}lllp{1.58in}@{}}
+\toprule
+\textbf{Base}&\textbf{Coefficients}&\textbf{OEIS entries, in order}&\textbf{Prime-divisor result}\\
+\midrule
+$1+\sqrt2+\sqrt3$ & $A$ & \oeis{188570}& omits $23$\\
+ & $B,C,D$ & \oeis{188571}, \oeis{188572}, \oeis{188573}& every prime recurs\\
+$2+\sqrt2+\sqrt3$ & $A$ & \oeis{377109}& omits $241$\\
+ & $B,C,D$ & \oeis{377110}, \oeis{377111}, \oeis{377112}& every prime recurs\\
+$3+\sqrt2+\sqrt3$ & $A$ & \oeis{377113}& omits $167$\\
+ & $B,C,D$ & \oeis{377114}, \oeis{377115}, \oeis{377116}& every prime recurs\\
+$u+u^2$ & $E,F,G$ & \oeis{377117}, \oeis{377118}, \oeis{377119}& every prime recurs\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\secname{A counterexample verifiable in 22 steps}
+For $c=1$, reduce the four coefficients modulo $23$ and start with $(1,0,0,0)$. Multiplying by $1+\sqrt2+\sqrt3$ sends $(a,b,c',d)$ to
+\[
+ (a+2b+3c',\ a+b+3d,\ a+c'+2d,\ b+c'+d).
+\]
+The constant coefficients for $n=0,\ldots,21$ are
+\[
+\begin{gathered}
+1,1,6,16,11,20,8,18,10,6,1,12,13,17,5,22,9,19,7,21,18,12.
+\end{gathered}
+\]
+After step 22 the full vector returns to $(1,0,0,0)$. The same 22 nonzero residues therefore repeat forever. This settles the universal claim for \oeis{188570}.
+
+\newpage
+\secname{Certificates for the three omitted primes}
+Fix a row of the following table. In $\F_p$ the residues $r,s$ satisfy $r^2=2$ and $s^2=3$. All four numbers $c\pm r\pm s$ are nonzero. Evaluating the expansion at all four choices of signs and adding gives
+\[
+ 4A_n=\sum_{\epsilon,\delta\in\{-1,1\}}
+                   (c+\epsilon r+\delta s)^n \pmod p.
+\]
+All four terms have period dividing $p-1$ by Fermat's little theorem. It suffices to check one block. The product in the last column is taken in $\F_p$.
+\begin{center}
+\renewcommand{\arraystretch}{1.14}
+\begin{tabular}{@{}rrrrll@{}}
+\toprule
+$c$&$p$&$r$&$s$& $\{c\pm r\pm s\}$ & $\displaystyle\prod_{n=0}^{p-2}A_n\bmod p$\\
+\midrule
+1&23&5&7&$12,3,22,13$&5\\
+2&241&22&56&$165,36,209,80$&231\\
+3&167&13&62&$95,52,121,78$&153\\
+\bottomrule
+\end{tabular}
+\end{center}
+Each product is nonzero, so every factor is nonzero. The supplied verifier independently multiplies basis monomials and checks the four-sign identity term by term. For each smaller prime, a separate table gives an index at which it divides the constant coefficient. These 98 witnesses establish minimality among primes dividing no term.
+
+\secname{Why the nine quadratic radical coefficients have infinitely many hits}
+Multiplication by $c+\sqrt2+\sqrt3$ acts on the column of coefficients by the matrix
+\[
+ M_c=\begin{pmatrix}c&2&3&0\\1&c&0&3\\1&0&c&2\\0&1&1&c\end{pmatrix},\qquad
+ \det M_c=c^4-10c^2+1=
+ \begin{cases}-8&c=1,3,\\-23&c=2.\end{cases}
+\]
+This multiplication formula is also given in Sela Fried's work on these coefficients [2]. If $p\nmid\det M_c$, the matrix permutes the finite set $\F_p^4$. The starting vector consequently returns after some positive number of steps $T$. At every multiple of $T$ the three radical coefficients vanish modulo $p$.
+
+For $c=1,3$ and $p=2$, the square of $c+\sqrt2+\sqrt3$ is zero in $\F_2[x,y]/(x^2-2,y^2-3)$. All coordinates vanish for $n\ge2$. For $c=2$ and $p=23$, direct multiplication gives $M_2^{23}e=M_2 e$ for $e=(1,0,0,0)^{\mathsf T}$. In the cycle starting at $n=1$, the coordinates $B_3$, $C_5$, and $D_1$ vanish. Adding any multiple of 22 to the corresponding index gives infinitely many hits for each coordinate.
+
+\newpage
+\secname{The cubic family and the gaps between hits}
+In the basis $1,u,u^2$, where $u^3=2$, multiplication by $u+u^2$ sends
+\[
+ (a,b,c)\longmapsto (2b+2c,\ a+2c,\ a+b).
+\]
+Its determinant is 6. For primes $p>3$ the orbit returns to its initial vector. The two radical coordinates vanish at $n=0$ and the constant coordinate vanishes at $n=1$, so each has a zero in every cycle. For $p=2,3$ the identity $(u+u^2)^3=6(u+u^2)+6$ makes all three coordinates zero from index 3 onward. The printed list for \oeis{377117} has $1$ at $n=1$, while its defining power has constant coefficient $0$. Its published generating function differs from the coefficient-defined one by $x$. Both conventions give the same eventual result.
+
+For any positive modulus $m$, each full coefficient vector lies in a finite set and its next value is determined by its current value. Repetition of a vector forces a periodic tail. If a period $T$ contains repeated hits at offsets $0\le r_1<\cdots<r_h<T$ (allowing $h=1$), the cyclic gap word is
+\[
+ r_2-r_1,\ \ldots,\ r_h-r_{h-1},\ T+r_1-r_h .
+\]
+It repeats forever. The positive cases above ensure $h\ge1$ for every prime.
+
+\secname{Checking the numerical examples}
+For \oeis{377116}, the entry for $p=2$ gives the word $(2,1,1,2)$. In fact every term is even, including the initial zeros, so every gap equals 1. Exact state orbits give the following least repeating words, with the phase taken from the first hit in the repeating state orbit.
+\begin{center}
+\begin{tabular}{@{}rll@{}}\toprule
+$p$ & Least gap period & Repeating gaps for \oeis{377116}\\\midrule
+2&1&1\\ 3&4&1, 2, 2, 1\\ 5&5&1, 4, 3, 8, 8\\
+7&10&1, 4, 2, 1, 8, 8, 8, 3, 5, 8\\\bottomrule
+\end{tabular}
+\end{center}
+Across the fifteen entries, 2 of 81 explicitly printed blocks agree with their labeled primes, allowing cyclic rotation. In 75 cases the block agrees with the $p$-th prime instead. The displayed code in \oeis{377109} applies the prime-index function twice. The six blocks in \oeis{377119} also fail this relabeling. The accompanying tables give all 86 cycles for which a length was claimed, including five without a printed block.
+
+\small
+\textbf{Sources and verification.} [1] The fifteen linked OEIS entries on page 1, particularly Clark Kimberling's prime-divisor conjectures of October 2024. The exact source audit uses the \href{https://github.com/oeis/oeisdata/tree/976b0c73e00453b1c1e6f16d83108cb9bb744c3b}{OEIS data snapshot of 26 November 2026}. [2] Sela Fried, \href{https://oeis.org/A188571/a188571_1.pdf}{\emph{On the coefficients of $(r+\sqrt p+\sqrt q)^n$}}, 2025. The \href{https://github.com/DomTheDeveloper/open-math-agents/tree/research/kimberling-prime-divisors/research/radical-primes}{proofs, verifier and complete tables} accompany this note. Priority has not been established.
+\end{document}
