@@ -8,4 +8,10 @@ For every competing Mills number B, induction proves g(n) ≤ floor(B^(3^(n+1)))
 
 Lean 4.36.0 checked the construction, greedy minimality, and all-index floor theorem. The axiom audit of `least_and_floors` printed only the three standard axioms. The final module supplies the [four-prime cube bound](https://github.com/DomTheDeveloper/open-math-agents/tree/2f9d0f04d85abbc5af728771e4de8cba75196773/verification/oeis-a060199) and the existing RH theorem. Run `lake update && lake build` here for that combined target.
 
-The final module also exports `gdm_exists_least`, the statement of [Google DeepMind's Mills.exists_least](https://github.com/google-deepmind/formal-conjectures/blob/ea8e3e198ded6fc73efb7f5653b74b28ac4ae1a8/FormalConjectures/Wikipedia/Mills.lean) with its two abbreviations unfolded. Lean verified the positive-natural reindexing and the construction together on the repository's Lean 4.33.1 toolchain.
+## Google DeepMind's Mills statements
+
+The final module exports the positive-index existence and leastness theorems and both forms of the ten-decimal interval for the least constant A. In the catalogue these are `Mills.exists'`, `Mills.exists_least`, `Mills.lower_bound_of_RH` and `Mills.mem_Ioo`. The formalizations use the exact catalogue types with its two abbreviations unfolded. The decimal result is due to Caldwell and Cheng. [Google DeepMind's Mills statements](https://github.com/google-deepmind/formal-conjectures/blob/ea8e3e198ded6fc73efb7f5653b74b28ac4ae1a8/FormalConjectures/Wikipedia/Mills.lean)
+
+The fourth greedy prime is 2521008887. Its primality follows from Lucas's theorem with witness 5. Exact arithmetic shows there is no prime between 1361³ and this prime. Bounding A⁸¹ by 2521008887 and 2521008888 and comparing rational powers gives 1.3063778838 < A < 1.3063778839. The prime certificate data also appear in [@senamakel's earlier registry reduction](https://github.com/GuillaumeBAUD-coder/open-math-agents/blob/279168a6976d1af73c215f586ef95e0ffc775c98/reductions/Mills.lower_bound_of_RH.R1.lean).
+
+Lean 4.33.1 checked the construction, exact prime certificate, decimal bounds and all four catalogue conclusions against the four-prime theorem's interface. Each printed only `propext`, `Classical.choice` and `Quot.sound`. The combined build that imports the pinned RH project is separate.
