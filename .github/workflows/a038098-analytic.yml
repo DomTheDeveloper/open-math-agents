@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           repository: DomTheDeveloper/formal-conjectures
-          ref: abbbfe7d9989c02cb2d9f14bbb7549b3d46ae7be
+          ref: dad6119f77149ad583946ad62d7056e74e36be3b
           persist-credentials: false
       - name: Install pinned Lean toolchain
         run: |
@@ -32,5 +32,7 @@ jobs:
           set -eo pipefail
           mkdir -p .lake/build/lib/lean/A038098
           lake env lean -o .lake/build/lib/lean/A038098/Analytic.olean A038098/Analytic.lean | tee "$RUNNER_TEMP/a038098-analytic.log"
-          lake env lean A038098/Envelope.lean | tee -a "$RUNNER_TEMP/a038098-analytic.log"
+          for mod in Envelope FiniteEnvelope Middle; do
+            lake env lean -o ".lake/build/lib/lean/A038098/$mod.olean" "A038098/$mod.lean" | tee -a "$RUNNER_TEMP/a038098-analytic.log"
+          done
           if grep -E 'sorryAx|ofReduceBool|native_decide|trustCompiler' "$RUNNER_TEMP/a038098-analytic.log"; then exit 1; fi
