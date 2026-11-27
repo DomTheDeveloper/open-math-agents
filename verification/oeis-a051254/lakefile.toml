@@ -1,0 +1,24 @@
+name = "MillsFloors"
+defaultTargets = ["FromRH"]
+
+[[require]]
+name = "HilliardCubePrimes"
+git = "https://github.com/DomTheDeveloper/open-math-agents.git"
+rev = "2f9d0f04d85abbc5af728771e4de8cba75196773"
+subDir = "verification/oeis-a060199"
+
+[[require]]
+name = "Cramer"
+git = "https://github.com/senamakel/cramer-rh.git"
+rev = "c465db4c64dcfd914075a76ac0ed66d1a05151d8"
+
+[[require]]
+name = "tree"
+git = "https://github.com/leanprover-community/riemann-hypothesis.git"
+rev = "507a75d91d131d627b380df4e32f6e9fb21dd067"
+
+[[lean_lib]]
+name = "MillsGreedy"
+
+[[lean_lib]]
+name = "FromRH"
