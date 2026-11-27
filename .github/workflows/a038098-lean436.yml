@@ -1,0 +1,54 @@
+name: Check A038098 on the external Lean toolchain
+on:
+  push:
+    branches: [audit/sun-a038098-cubes]
+    paths: ['.github/workflows/a038098-lean436.yml']
+permissions:
+  contents: read
+concurrency:
+  group: a038098-lean436
+  cancel-in-progress: true
+jobs:
+  kernel:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          repository: DomTheDeveloper/formal-conjectures
+          ref: ebc7278d54c9332d8099e30fe70b7dc76bb586cb
+          path: proof
+          persist-credentials: false
+          sparse-checkout: A038098
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          repository: senamakel/conjectures-lean
+          ref: f34a5482921096c7f0a7c40e43aca1dc21987635
+          persist-credentials: false
+          path: upstream
+          sparse-checkout: |
+            conjectures/schoenfeld-rh
+            conjectures/erdos-985
+      - name: Install Lean
+        run: |
+          curl -fsSL --retry 3 https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Fetch the upstream pinned Mathlib
+        working-directory: upstream/conjectures/schoenfeld-rh
+        env:
+          MATHLIB_NO_CACHE_ON_UPDATE: 1
+        run: |
+          df -h .
+          lake exe cache get Mathlib.NumberTheory.Chebyshev Mathlib.Analysis.Real.Pi.Bounds Mathlib.Analysis.Complex.ExponentialBounds Mathlib.Tactic.Linarith Mathlib.Tactic.Positivity Mathlib.Analysis.SpecialFunctions.Pow.Deriv Mathlib.Analysis.Calculus.Deriv.Shift Mathlib.Analysis.Calculus.MeanValue Mathlib.MeasureTheory.Integral.IntegralEqImproper Mathlib.Analysis.SpecialFunctions.Pow.Asymptotics
+          df -h .
+      - name: Compile the cube proofs on Lean 4.36
+        working-directory: upstream/conjectures/schoenfeld-rh
+        run: |
+          set -eo pipefail
+          cp -R "$GITHUB_WORKSPACE/proof/A038098" .
+          mkdir -p .lake/build/lib/lean/A038098
+          for mod in Analytic Envelope FiniteEnvelope Middle Zeros IntegerSmoothing ZeroCounts ZeroWeights Geometry Budget FourSum Assembly IntegralIdentity; do
+            echo "Checking A038098/$mod.lean"
+            lake env lean -o ".lake/build/lib/lean/A038098/$mod.olean" "A038098/$mod.lean" | tee -a "$RUNNER_TEMP/analytic.log"
+          done
+          if grep -E 'sorryAx|ofReduceBool|native_decide|trustCompiler' "$RUNNER_TEMP/analytic.log"; then exit 1; fi
